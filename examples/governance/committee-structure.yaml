@@ -1,0 +1,132 @@
+# Org as Code — Example: Committee Structure
+# This is a simplified, anonymized example of how organizational
+# governance structures can be defined as code.
+
+---
+org:
+  name: "Acme Corp"
+  version: "2026-Q1"
+
+committees:
+  - id: steering
+    name: "Steering Committee"
+    purpose: "Strategic alignment, resource allocation, and cross-functional prioritization"
+    cadence: bi-weekly
+    duration: 60min
+    decision_framework: DACI
+
+    members:
+      - role: driver
+        position: CEO
+        accountabilities:
+          - agenda-setting
+          - facilitation
+          - decision-log
+
+      - role: approver
+        position: Board
+        accountabilities:
+          - strategic-decisions
+          - budget-approval
+
+      - role: contributor
+        position: VP Engineering
+      - role: contributor
+        position: VP Product
+      - role: contributor
+        position: VP Sales
+
+      - role: informed
+        position: COO
+        accountabilities:
+          - execution-tracking
+          - escalation-handling
+
+    decisions:
+      - type: strategic
+        authority: approve
+        quorum: 3
+        escalation: board
+        documentation: decision-log
+
+      - type: budget
+        authority: approve
+        threshold: ">50k EUR"
+        escalation: board
+
+      - type: operational
+        authority: delegate
+        delegation_target: department-leads
+        escalation: none
+
+    interfaces:
+      inputs:
+        - source: product-team
+          artifact: quarterly-okrs
+          format: yaml
+          cadence: quarterly
+
+        - source: finance
+          artifact: budget-report
+          format: spreadsheet
+          cadence: monthly
+
+      outputs:
+        - target: all-hands
+          artifact: decision-summary
+          format: markdown
+          cadence: monthly
+
+        - target: department-leads
+          artifact: action-items
+          format: yaml
+          cadence: per-meeting
+
+    rituals:
+      pre_meeting:
+        - "Agenda shared 48h before"
+        - "Pre-reads attached to agenda"
+      during:
+        - "Timeboxed topics (max 15min each)"
+        - "Decisions logged in real-time"
+      post_meeting:
+        - "Decision log published within 24h"
+        - "Action items assigned with deadlines"
+
+  - id: product-sync
+    name: "Product Sync"
+    purpose: "Tactical alignment across product teams"
+    cadence: weekly
+    duration: 30min
+    decision_framework: consent
+
+    members:
+      - role: facilitator
+        position: Head of Product
+      - role: contributor
+        position: Product Manager A
+      - role: contributor
+        position: Product Manager B
+      - role: contributor
+        position: Tech Lead
+
+    interfaces:
+      inputs:
+        - source: engineering
+          artifact: sprint-status
+          format: yaml
+          cadence: weekly
+      outputs:
+        - target: steering
+          artifact: blockers-escalation
+          format: markdown
+          cadence: as-needed
+
+# ---
+# Decision Flow: How decisions move through the organization
+#
+# product-sync → (escalation) → steering → (strategic) → board
+#
+# Each committee has clear interfaces (inputs/outputs),
+# defined decision authority, and documented rituals.
+# No decision lives in someone's head — it's all in the code.
