@@ -27,67 +27,124 @@ Organizations spend enormous effort on governance, compliance, and coordination 
 
 ```
 org-as-code/
-├── spec/                  # OPI Specification (YAML format)
-│   └── opi-spec-v0.1.md
-├── examples/              # Example configurations
-│   └── governance/
-│       └── committee-structure.yaml
-├── principles/            # Detailed principle descriptions
-├── docs/                  # Documentation & guides
-└── website/               # Source for org-as-code.com
+├── spec/                           # OPI Specification
+│   ├── opi-v0.1.md                 #   Foundation spec (669 lines)
+│   ├── opi-v0.2.md                 #   Full spec (1500+ lines, 36 validation rules)
+│   └── opi-v0.2.schema.json        #   JSON Schema for validation
+├── examples/
+│   ├── governance/                 # Unit definitions
+│   │   ├── committee-structure.yaml
+│   │   ├── steering-committee.yaml #   Committee with DACI, schedule, interfaces
+│   │   └── delivery-lead-sync.yaml #   Meeting with facilitator, weekly cadence
+│   └── flows/                      # Cross-unit decision flows
+│       ├── budget-approval.yaml    #   Decision flow with conditional routing
+│       └── escalation.yaml         #   Escalation path with time-based triggers
+├── templates/                      # Reusable org templates
+│   ├── consulting-firm.yaml        #   7 custom types for consulting orgs
+│   └── spotify-model.yaml          #   Squad, Tribe, Chapter, Guild types
+└── docs/
+    └── research/                   # Background research
+        ├── competitive-landscape.md
+        └── opi-spec-research-report.md
 ```
 
 ## Quick Example
 
+A Steering Committee defined as OPI — with members, schedule, governance, and interfaces:
+
 ```yaml
-# committees/steering-committee.yaml
-committee:
-  name: Steering Committee
-  purpose: "Strategic alignment and resource allocation"
-  cadence: bi-weekly
-  duration: 60min
+opi: "0.2.0"
 
-  members:
-    - role: chair
-      position: CEO
-      accountability: agenda, facilitation, decision-log
-    - role: member
-      position: VP Engineering
-    - role: member
-      position: VP Product
-    - role: observer
-      position: COO
+unit:
+  name: "Steering Committee"
+  id: steering-committee
+  type: committee
+  purpose: "Strategic decisions for the delivery organization"
+  mandate: "Budget approval >10k EUR, headcount changes, unit restructuring"
+  owner: "COO"
 
-  decision_framework: DACI
+members:
+  - role: chair
+    position: "COO"
+    daci: approver
+    attendance: permanent
+  - role: member
+    position: "Head of Delivery"
+    daci: driver
+    attendance: permanent
+  - role: member
+    position: "Head of Sales"
+    daci: contributor
+    attendance: permanent
+
+schedule:
+  cadence: biweekly
+  duration: 60
+  rrule: "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;BYHOUR=10;BYMINUTE=0"
+
+governance:
+  framework: daci
   decisions:
-    - type: strategic
+    - type: budget-approval
       authority: approve
+      quorum: 3
       escalation: board
-    - type: operational
-      authority: delegate
-      escalation: none
 
-  interfaces:
-    receives_from:
-      - source: product-team
-        artifact: quarterly-okrs
-        format: yaml
-    sends_to:
-      - target: all-hands
-        artifact: decision-log
-        format: markdown
-        cadence: monthly
+interfaces:
+  inputs:
+    - from: delivery-lead-sync
+      artifact: decision-proposals
+      format: markdown
+  outputs:
+    - to: all-hands
+      artifact: decision-log
+      format: markdown
+      cadence: monthly
 ```
+
+## OPI Spec v0.2 Highlights
+
+The specification defines 15 sections for modeling organizational units:
+
+| Section | Purpose |
+|---------|---------|
+| `unit` | Identity, type, purpose, mandate |
+| `members` | Roles with DACI/RAPID accountability |
+| `schedule` | Cadence with iCalendar RRULE support |
+| `governance` | Decision frameworks and authority |
+| `interfaces` | Inputs/outputs between units |
+| `flows` | Cross-unit decision and escalation paths |
+| `components` | Type inheritance and custom unit types |
+| `capabilities` | What the unit can do |
+| `channels` | Communication (async, meetings, wikis) |
+| `dependencies` | Unit relationships and SLAs |
+
+**Unit types:** `team` · `department` · `committee` · `meeting` · `working-group` · `circle` · `board` · `custom`
+
+**Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
+
+→ Full spec: [`spec/opi-v0.2.md`](spec/opi-v0.2.md) | JSON Schema: [`spec/opi-v0.2.schema.json`](spec/opi-v0.2.schema.json)
+
+## Templates
+
+Pre-built organizational templates with custom unit types:
+
+- **[Consulting Firm](templates/consulting-firm.yaml)** — Practice, Delivery Unit, Steering, Staffing Board, Client Board, All-Hands, Leadership Team
+- **[Spotify Model](templates/spotify-model.yaml)** — Squad, Tribe, Chapter, Guild
+
+Templates use OPI's type inheritance (`components.types`) so you can define your organization's building blocks once and instantiate them consistently.
 
 ## Status
 
-🚧 **Early Stage** — Spec v0.1 in development. Contributions and feedback welcome.
+🚧 **Active Development** — Spec v0.2 is feature-complete. Tooling (validation, visualization) coming next.
 
 ## Learn More
 
 - 🌐 [org-as-code.com](https://org-as-code.com) — Concept, principles, and visual guides
-- 📖 [OPI Specification](spec/opi-spec-v0.1.md) — The technical format
+- 📖 [OPI Spec v0.2](spec/opi-v0.2.md) — The full specification
+- 📖 [OPI Spec v0.1](spec/opi-v0.1.md) — Foundation version
 - 💡 [Examples](examples/) — Real-world configurations
+- 📐 [Templates](templates/) — Reusable organizational templates
 
 ## Author
 

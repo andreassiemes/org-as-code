@@ -1,0 +1,100 @@
+# OPI Example: Delivery Lead Sync
+# Weekly operational meeting that feeds into the Steering Committee.
+# Demonstrates: meeting unit type, simpler governance, schedule, cross-unit interfaces.
+
+opi: "0.2.0"
+
+unit:
+  name: "Delivery Lead Sync"
+  id: delivery-lead-sync
+  type: meeting
+  purpose: "Operational alignment across delivery units"
+  owner: "Head of Delivery"
+  parent: delivery
+  tags: [operational, delivery, sync]
+  version: "2026-Q1"
+
+members:
+  - role: facilitator
+    position: "Head of Delivery"
+    daci: driver
+    attendance: permanent
+
+  - role: member
+    position: "Unit Lead"
+    count: 4
+    daci: contributor
+    attendance: permanent
+    accountabilities:
+      - unit-status-update
+      - blockers-and-risks
+
+  - role: guest
+    position: "Scrum Master / Agile Coach"
+    daci: contributor
+    attendance: optional
+
+schedule:
+  cadence: weekly
+  day: Monday
+  time: "09:00"
+  duration: 60min
+  location: "Microsoft Teams"
+  timezone: Europe/Berlin
+  recurrence:
+    type: rrule
+    value: "FREQ=WEEKLY;BYDAY=MO"
+
+interfaces:
+  inputs:
+    - from: unit-leads
+      artifact: unit-status
+      format: markdown
+      cadence: weekly
+      required: true
+
+    - from: steering-committee
+      artifact: approved-initiatives
+      format: decision-record
+      cadence: biweekly
+
+  outputs:
+    - to: steering-committee
+      artifact: decision-request
+      format: markdown
+      cadence: biweekly
+
+    - to: unit-leads
+      artifact: cross-unit-dependencies
+      format: markdown
+      cadence: weekly
+
+governance:
+  framework: DACI
+  decisions:
+    - type: operational-prioritization
+      driver: head-of-delivery
+      approver: head-of-delivery
+      contributors: [unit-leads]
+      authority: decide
+      documentation: meeting-minutes
+
+    - type: escalation-to-steering
+      driver: unit-leads
+      approver: head-of-delivery
+      informed: [steering-committee]
+      authority: escalate
+      threshold: "cross-unit impact OR budget >10k"
+      escalation: steering-committee
+
+channels:
+  async:
+    - type: teams
+      name: "#delivery-leads"
+      purpose: "Async coordination between syncs"
+
+dependencies:
+  - unit: steering-committee
+    type: collaboration
+    description: "Escalation path and strategic input"
+    health: ok

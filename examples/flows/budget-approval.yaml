@@ -1,0 +1,77 @@
+# OPI Example: Budget Approval Flow
+# Demonstrates: decision flow across 3 stations, conditional routing, communication rules, fallback.
+# References: example-delivery-lead-sync.yaml → example-steering-committee.yaml → board
+
+opi: "0.2.0"
+
+flow:
+  name: "Budget Approval"
+  id: budget-approval
+  type: decision
+  description: "Budget requests travel through up to 3 approval levels depending on amount. Every request starts in the Delivery Lead Sync. Amounts >10k go to Steering, >50k additionally to Board."
+  trigger: "Unit lead identifies budget need during Delivery Lead Sync"
+
+  path:
+    - station: delivery-lead-sync
+      action: identify
+      description: "Unit lead raises budget need. Delivery Leads discuss and validate."
+      output: budget-request
+      sla: "Same meeting"
+
+    - station: delivery-lead-sync
+      action: propose
+      description: "Head of Delivery formalizes request with business case, amount, timeline."
+      input: budget-request
+      output: budget-proposal
+      sla: "By next Delivery Lead Sync (max 7d)"
+
+    - station: steering-committee
+      action: approve
+      condition: "amount > 10k EUR"
+      description: "Steering Committee reviews business case and approves or rejects."
+      input: budget-proposal
+      output: budget-decision
+      governance:
+        framework: DACI
+        driver: head-of-delivery
+        approver: coo
+        contributors: [cfo, head-of-sales]
+        informed: [unit-leads]
+      sla: "Next Steering meeting (max 14d)"
+
+    - station: board
+      action: ratify
+      condition: "amount > 50k EUR"
+      description: "Board ratifies large budget decisions."
+      input: budget-decision
+      output: ratified-budget
+      governance:
+        framework: DACI
+        driver: coo
+        approver: board-chair
+      sla: "Next Board meeting (max 90d)"
+
+  communication:
+    - trigger: approved
+      to: [delivery-lead-sync, finance, all-hands]
+      artifact: budget-announcement
+      format: decision-record
+      channel: teams
+
+    - trigger: rejected
+      to: [delivery-lead-sync]
+      artifact: rejection-feedback
+      format: markdown
+      channel: teams
+
+    - trigger: approved-with-conditions
+      to: [delivery-lead-sync, finance]
+      artifact: conditional-approval
+      format: decision-record
+      channel: teams
+
+  fallback:
+    timeout: "14d"
+    action: escalate
+    to: coo
+    notify: [head-of-delivery, cfo]

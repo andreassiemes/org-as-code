@@ -1,0 +1,183 @@
+# OPI Example: Steering Committee
+# Anonymized from real-world consulting firm committee structure.
+# Demonstrates: committee unit type, DACI members, schedule, interfaces, governance.
+
+opi: "0.2.0"
+
+unit:
+  name: "Steering Committee"
+  id: steering-committee
+  type: committee
+  purpose: "Strategic decisions for the delivery organization"
+  mandate: "Budget approval >10k EUR, headcount changes, unit restructuring, initiative prioritization"
+  owner: "COO"
+  parent: leadership
+  tags: [governance, strategy, delivery]
+  version: "2026-Q1"
+
+members:
+  - role: chair
+    position: "COO"
+    daci: approver
+    attendance: permanent
+    accountabilities:
+      - final-decision-authority
+      - escalation-target
+
+  - role: member
+    position: "Head of Delivery"
+    daci: driver
+    attendance: permanent
+    accountabilities:
+      - prepare-decision-proposals
+      - report-delivery-metrics
+
+  - role: member
+    position: "Head of Sales"
+    daci: contributor
+    attendance: permanent
+    accountabilities:
+      - pipeline-visibility
+      - customer-feedback-relay
+
+  - role: member
+    position: "Head of People & Culture"
+    daci: contributor
+    attendance: permanent
+    accountabilities:
+      - headcount-feasibility
+      - culture-impact-assessment
+
+  - role: guest
+    position: "CFO"
+    daci: informed
+    attendance: on-demand
+    accountabilities:
+      - budget-validation
+
+  - role: guest
+    position: "Unit Leads"
+    count: 4
+    daci: informed
+    attendance: on-demand
+
+schedule:
+  cadence: biweekly
+  day: Wednesday
+  time: "10:00"
+  duration: 90min
+  location: "Room A / Microsoft Teams"
+  timezone: Europe/Berlin
+  recurrence:
+    type: rrule
+    value: "FREQ=WEEKLY;INTERVAL=2;BYDAY=WE"
+
+interfaces:
+  inputs:
+    - from: delivery-lead-sync
+      artifact: decision-request
+      format: markdown
+      cadence: biweekly
+      required: true
+
+    - from: finance
+      artifact: budget-report
+      format: spreadsheet
+      cadence: monthly
+
+    - from: people-culture
+      artifact: headcount-status
+      format: markdown
+      cadence: monthly
+
+  outputs:
+    - to: delivery-lead-sync
+      artifact: approved-initiatives
+      format: decision-record
+      cadence: biweekly
+
+    - to: all-hands
+      artifact: steering-decisions
+      format: markdown
+      cadence: biweekly
+
+    - to: board
+      artifact: escalation-items
+      format: decision-record
+      cadence: on-demand
+
+governance:
+  framework: DACI
+  decisions:
+    - type: budget-allocation
+      driver: head-of-delivery
+      approver: coo
+      contributors: [cfo, head-of-sales]
+      informed: [unit-leads, board]
+      threshold: ">10k EUR"
+      escalation: board
+      documentation: decision-log
+
+    - type: headcount
+      driver: head-of-delivery
+      approver: coo
+      contributors: [head-of-people-culture, cfo]
+      informed: [unit-leads]
+      authority: approve
+      documentation: decision-log
+
+    - type: unit-restructuring
+      driver: head-of-delivery
+      approver: coo
+      contributors: [head-of-people-culture, affected-unit-leads]
+      informed: [all-hands, board]
+      authority: decide
+      quorum: 4
+      escalation: board
+      documentation: decision-log
+
+    - type: initiative-prioritization
+      driver: head-of-delivery
+      approver: coo
+      contributors: [head-of-sales, unit-leads]
+      informed: [all-hands]
+      authority: decide
+      documentation: decision-log
+
+channels:
+  async:
+    - type: teams
+      name: "Steering Committee"
+      purpose: "Agenda preparation, async pre-reads, decision follow-ups"
+
+    - type: wiki
+      name: "Confluence: Steering Committee"
+      purpose: "Decision log, meeting minutes, initiative tracker"
+
+dependencies:
+  - unit: delivery-lead-sync
+    type: collaboration
+    description: "Primary feeder: escalated decisions and initiative proposals"
+    health: ok
+
+  - unit: board
+    type: x-as-a-service
+    description: "Escalation target for decisions above steering mandate"
+    health: ok
+
+  - unit: finance
+    type: x-as-a-service
+    description: "Budget reports and financial validation"
+    health: ok
+
+  - unit: people-culture
+    type: x-as-a-service
+    description: "Headcount data and culture impact assessments"
+    health: at-risk
+    note: "Reports often delayed by 1 week"
+
+references:
+  - name: "Decision Log"
+    url: "https://wiki.example.com/steering/decisions"
+  - name: "Initiative Tracker"
+    url: "https://wiki.example.com/steering/initiatives"

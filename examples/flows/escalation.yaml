@@ -1,0 +1,63 @@
+# OPI Example: Cross-Unit Blocker Escalation
+# Demonstrates: escalation flow, time-based conditions, fallback, peer resolution before escalation.
+
+opi: "0.2.0"
+
+flow:
+  name: "Cross-Unit Blocker"
+  id: cross-unit-blocker
+  type: escalation
+  description: "When one unit blocks another, resolve peer-to-peer first. If unresolved after 5 days, escalate through Delivery Leads to Steering."
+  trigger: "Unit dependency health becomes 'blocked'"
+
+  path:
+    - station: affected-unit
+      action: identify
+      description: "Affected unit documents the blocker: what's blocked, impact, what's needed."
+      output: blocker-report
+      sla: "1 business day"
+
+    - station: blocking-unit
+      action: review
+      description: "Blocking unit reviews and attempts peer-to-peer resolution."
+      input: blocker-report
+      output: resolution-attempt
+      condition: "Peer resolution within 5d"
+      sla: "5 business days"
+
+    - station: delivery-lead-sync
+      action: review
+      description: "If peer resolution fails, Delivery Leads discuss reallocation or priority change."
+      input: blocker-report
+      condition: "Not resolved after 5d"
+      output: escalation-report
+      sla: "Next Delivery Lead Sync"
+
+    - station: steering-committee
+      action: approve
+      description: "Steering decides on resource reallocation, priority override, or organizational change."
+      input: escalation-report
+      condition: "Not resolved after Delivery Lead review"
+      output: resolution-decision
+      governance:
+        framework: DACI
+        driver: head-of-delivery
+        approver: coo
+      sla: "Next Steering meeting"
+
+  communication:
+    - trigger: resolved
+      to: [affected-unit, blocking-unit, delivery-lead-sync]
+      artifact: resolution-confirmation
+      format: decision-record
+
+    - trigger: escalated
+      to: [steering-committee, coo]
+      artifact: escalation-notice
+      format: markdown
+
+  fallback:
+    timeout: "10 business days"
+    action: escalate
+    to: coo
+    notify: [affected-unit, blocking-unit, head-of-delivery]

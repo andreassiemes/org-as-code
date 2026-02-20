@@ -1,0 +1,133 @@
+# OPI Template: Consulting Firm
+# Pre-built unit types for a professional services / consulting organization.
+# Matches the ORAYLIS PoC context: Units, Practices, Steering, Staffing.
+#
+# Consulting firm concepts:
+# - Practice: Skill-based unit that staffs into client projects
+# - Delivery Unit: Client-facing team executing engagements
+# - Steering Committee: Strategic decision body
+# - Staffing Board: Resource allocation across projects
+# - Client Board: Per-client governance with account management
+
+opi: "0.2.0"
+
+components:
+  unit-types:
+    consulting-practice:
+      description: "Skill-based unit (e.g. Data Strategy, Cloud Engineering). Builds expertise and staffs consultants into engagements."
+      base_type: stream-aligned
+      required_members: [practice-lead]
+      required_fields: [capabilities, interfaces]
+      defaults:
+        governance:
+          framework: DACI
+
+    consulting-delivery-unit:
+      description: "Client-facing team executing a specific engagement or set of engagements."
+      base_type: stream-aligned
+      required_members: [engagement-manager, delivery-lead]
+      required_fields: [interfaces, schedule]
+      defaults:
+        schedule:
+          cadence: weekly
+
+    consulting-steering:
+      description: "Strategic committee for organizational decisions. Budget, headcount, unit restructuring."
+      base_type: committee
+      required_members: [chair]
+      required_fields: [governance, schedule, interfaces]
+      defaults:
+        governance:
+          framework: DACI
+        schedule:
+          cadence: biweekly
+          duration: 90min
+
+    consulting-staffing-board:
+      description: "Resource allocation body. Matches consultants to engagements based on skills, availability, development goals."
+      base_type: meeting
+      required_members: [staffing-lead, practice-leads]
+      required_fields: [schedule, interfaces]
+      defaults:
+        schedule:
+          cadence: weekly
+          duration: 60min
+
+    consulting-client-board:
+      description: "Per-client governance body. Account strategy, delivery quality, relationship health."
+      base_type: committee
+      required_members: [account-manager, engagement-manager]
+      required_fields: [governance, schedule]
+      defaults:
+        governance:
+          framework: DACI
+        schedule:
+          cadence: monthly
+          duration: 60min
+
+    consulting-all-hands:
+      description: "Company-wide meeting for transparency, alignment, and culture."
+      base_type: meeting
+      required_members: [managing-director]
+      defaults:
+        schedule:
+          cadence: monthly
+          duration: 60min
+
+    consulting-leadership-team:
+      description: "Executive body: Managing Directors + C-Level. Strategic direction, P&L, market positioning."
+      base_type: leadership
+      required_members: [managing-director]
+      required_fields: [governance, schedule]
+      defaults:
+        governance:
+          framework: DACI
+        schedule:
+          cadence: weekly
+          duration: 60min
+
+# --- Standard flows for a consulting firm ---
+
+flows:
+  - name: "Staffing Request"
+    id: staffing-request
+    type: decision
+    description: "When an engagement needs a consultant, request flows through Staffing Board"
+    path:
+      - station: engagement-manager
+        action: identify
+        output: staffing-request
+      - station: staffing-board
+        action: review
+        input: staffing-request
+        output: staffing-decision
+        sla: "Next Staffing Board (max 7d)"
+      - station: practice-lead
+        action: approve
+        input: staffing-decision
+        condition: "Consultant available and skill match"
+    communication:
+      - trigger: approved
+        to: [engagement-manager, consultant, practice-lead]
+        artifact: staffing-confirmation
+
+  - name: "Engagement Escalation"
+    id: engagement-escalation
+    type: escalation
+    description: "Client issues escalate from Delivery through Client Board to Steering"
+    path:
+      - station: delivery-lead
+        action: identify
+        output: issue-report
+      - station: client-board
+        action: review
+        input: issue-report
+        sla: "Next Client Board"
+      - station: steering-committee
+        action: approve
+        condition: "Commercial impact >20k or reputation risk"
+        input: issue-report
+    fallback:
+      timeout: "5 business days"
+      action: escalate
+      to: managing-director

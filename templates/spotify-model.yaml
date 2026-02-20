@@ -1,0 +1,131 @@
+# OPI Template: Spotify Model
+# Pre-built unit types and example structure for the Spotify organizational model.
+# Usage: Copy unit-types into your components/unit-types.yaml, then scaffold units.
+#
+# Spotify Model concepts:
+# - Squad: Cross-functional team (6-12 people), aligned to a mission
+# - Tribe: Collection of squads with shared domain (max ~100 people)
+# - Chapter: Functional group across squads (e.g. all backend devs)
+# - Guild: Voluntary community of interest across the org
+
+opi: "0.2.0"
+
+components:
+  unit-types:
+    spotify-squad:
+      description: "Cross-functional team aligned to a mission. Autonomous in HOW they work, aligned on WHAT they deliver."
+      base_type: stream-aligned
+      required_members: [product-owner, scrum-master]
+      required_fields: [schedule, interfaces, governance]
+      defaults:
+        schedule:
+          cadence: biweekly
+          duration: 60min
+        governance:
+          framework: consent
+      template:
+        channels:
+          sync:
+            - type: standup
+              name: "Daily Standup"
+              cadence: daily
+            - type: review
+              name: "Sprint Review"
+              cadence: biweekly
+            - type: meeting
+              name: "Retrospective"
+              cadence: biweekly
+
+    spotify-tribe:
+      description: "Collection of squads with a shared business domain. Led by a Tribe Lead. Max ~100 people."
+      base_type: leadership
+      required_members: [tribe-lead]
+      required_fields: [schedule]
+      defaults:
+        schedule:
+          cadence: monthly
+          duration: 90min
+      template:
+        channels:
+          sync:
+            - type: meeting
+              name: "Tribe All-Hands"
+              cadence: monthly
+
+    spotify-chapter:
+      description: "Functional expertise group spanning squads within a tribe (e.g. 'Backend Chapter'). Chapter Lead manages people."
+      base_type: enabling
+      required_members: [chapter-lead]
+      required_fields: [schedule]
+      defaults:
+        schedule:
+          cadence: biweekly
+          duration: 60min
+
+    spotify-guild:
+      description: "Voluntary community of interest across the entire org (e.g. 'Testing Guild'). No formal authority."
+      base_type: enabling
+      required_members: [guild-coordinator]
+      defaults:
+        schedule:
+          cadence: monthly
+          duration: 60min
+
+# --- Example: A Payments Tribe with 3 Squads ---
+
+---
+# Example usage (separate files in practice):
+
+# units/tribes/payments-tribe.yaml
+# unit:
+#   name: "Payments Tribe"
+#   derived_from: spotify-tribe
+#   purpose: "All payment-related capabilities"
+#   owner: "Tribe Lead Payments"
+#
+# members:
+#   - role: tribe-lead
+#     name: "Maria Schmidt"
+#
+# schedule:
+#   cadence: monthly
+#   day: "First Thursday"
+#   time: "14:00"
+#   duration: 90min
+
+# units/squads/checkout-squad.yaml
+# unit:
+#   name: "Checkout Squad"
+#   derived_from: spotify-squad
+#   purpose: "Seamless checkout experience"
+#   parent: payments-tribe
+#
+# members:
+#   - role: product-owner
+#     name: "Jan Müller"
+#   - role: scrum-master
+#     name: "Lisa Weber"
+#   - role: developer
+#     count: 4
+#   - role: designer
+#     count: 1
+#
+# schedule:
+#   cadence: biweekly
+#   day: Wednesday
+#   time: "10:00"
+#   duration: 60min
+
+# units/chapters/backend-chapter.yaml
+# unit:
+#   name: "Backend Chapter"
+#   derived_from: spotify-chapter
+#   purpose: "Backend engineering excellence across Payments squads"
+#   parent: payments-tribe
+#
+# members:
+#   - role: chapter-lead
+#     name: "Tom Fischer"
+#   - role: member
+#     count: 8
+#     position: "Backend Developer"
