@@ -145,6 +145,7 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 - 📖 [OPI Spec v0.1](spec/opi-v0.1.md) — Foundation version
 - 💡 [Examples](examples/) — Real-world configurations
 - 📐 [Templates](templates/) — Reusable organizational templates
+- 🧩 [Business Primitives](https://github.com/andreassiemes/business-primitives) — The communication layer (Atomic Business Design)
 
 ## Author
 
@@ -152,6 +153,7 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 - [LinkedIn](https://www.linkedin.com/in/andreassiemes/)
 - [andreassiemes.de](https://andreassiemes.de)
+- [Business Primitives](https://businessprimitives.com)
 
 ## License
 
