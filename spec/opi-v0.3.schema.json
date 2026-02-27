@@ -1,0 +1,457 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://org-as-code.com/schemas/opi-v0.3.schema.json",
+  "title": "OPI Specification v0.3",
+  "description": "Organizational Programming Interface — A machine-readable format for organizational design. V0.3 adds BP integration, interface methods, temporal roles, and tooling spec.",
+  "type": "object",
+  "required": ["opi"],
+  "additionalProperties": true,
+  "patternProperties": {
+    "^x-": {
+      "description": "Organization-specific extension fields"
+    }
+  },
+
+  "oneOf": [
+    {
+      "description": "Unit document (standard OPI document)",
+      "required": ["unit"],
+      "properties": {
+        "opi": { "$ref": "#/$defs/opi-version" },
+        "unit": { "$ref": "#/$defs/unit" },
+        "members": { "$ref": "#/$defs/members" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "interfaces": { "$ref": "#/$defs/interfaces" },
+        "events": { "$ref": "#/$defs/events" },
+        "governance": { "$ref": "#/$defs/governance" },
+        "schedule": { "$ref": "#/$defs/schedule" },
+        "channels": { "$ref": "#/$defs/channels" },
+        "dependencies": { "$ref": "#/$defs/dependencies" },
+        "flows": { "$ref": "#/$defs/flows" },
+        "references": { "$ref": "#/$defs/references" },
+        "components": { "$ref": "#/$defs/components" },
+        "status": { "$ref": "#/$defs/status" }
+      }
+    },
+    {
+      "description": "Org-level document (v0.3 — organizational metadata and defaults)",
+      "required": ["org"],
+      "properties": {
+        "opi": { "$ref": "#/$defs/opi-version" },
+        "org": { "$ref": "#/$defs/org" },
+        "defaults": { "$ref": "#/$defs/defaults" },
+        "schema": { "$ref": "#/$defs/schema-versions" }
+      }
+    }
+  ],
+
+  "$defs": {
+    "opi-version": {
+      "type": "string",
+      "description": "OPI Specification version.",
+      "pattern": "^0\\.3\\.\\d+$",
+      "examples": ["0.3.0"]
+    },
+
+    "org": {
+      "type": "object",
+      "description": "Org-level metadata (v0.3).",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "version": { "type": "string" },
+        "website": { "type": "string", "format": "uri" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "defaults": {
+      "type": "object",
+      "description": "Org-wide defaults applied to all units (v0.3).",
+      "properties": {
+        "timezone": { "type": "string" },
+        "locale": { "type": "string" },
+        "governance": {
+          "type": "object",
+          "properties": {
+            "framework": { "$ref": "#/$defs/governance-framework" }
+          }
+        },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "timezone": { "type": "string" }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "schema-versions": {
+      "type": "object",
+      "description": "Declared spec versions in use (v0.3).",
+      "properties": {
+        "opi_version": { "type": "string" },
+        "bp_version": { "type": "string" }
+      }
+    },
+
+    "unit": {
+      "type": "object",
+      "description": "Identity and metadata of the organizational unit.",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "type": { "$ref": "#/$defs/unit-type" },
+        "purpose": { "type": "string" },
+        "mandate": { "type": "string" },
+        "owner": { "type": "string" },
+        "parent": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "version": { "type": "string" },
+        "derived_from": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+
+    "unit-type": {
+      "type": "string",
+      "enum": [
+        "stream-aligned", "platform", "enabling", "leadership", "support",
+        "committee", "meeting", "working-group", "circle"
+      ]
+    },
+
+    "members": {
+      "type": "array",
+      "description": "People, roles, and their accountabilities.",
+      "items": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": { "type": "string" },
+          "position": { "type": "string" },
+          "name": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1, "default": 1 },
+          "accountabilities": { "type": "array", "items": { "type": "string" } },
+          "daci": { "$ref": "#/$defs/daci-role" },
+          "attendance": {
+            "type": "string",
+            "enum": ["permanent", "optional", "on-demand"],
+            "default": "permanent"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "When role began (v0.3)."
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "When role ends (v0.3)."
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+
+    "daci-role": {
+      "type": "string",
+      "enum": ["driver", "approver", "contributor", "informed"]
+    },
+
+    "governance-framework": {
+      "type": "string",
+      "enum": ["DACI", "RAPID", "OVIS", "consent", "consensus", "autocratic"]
+    },
+
+    "interface-method": {
+      "type": "string",
+      "description": "Communication pattern (v0.3).",
+      "enum": ["unary", "stream", "batch", "collaborative"]
+    },
+
+    "bp-type": {
+      "type": "string",
+      "description": "Business Primitives atom type (v0.3).",
+      "enum": ["decision", "metric", "risk", "action", "timeline", "status", "stakeholder"]
+    },
+
+    "capabilities": {
+      "type": "object",
+      "description": "What this unit provides.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "description": { "type": "string" },
+          "type": { "type": "string", "enum": ["core", "support", "advisory"] },
+          "cadence": { "type": "string" },
+          "sla": {
+            "type": "object",
+            "properties": {
+              "response_time": { "type": "string" },
+              "quality": { "type": "string" }
+            }
+          },
+          "process": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    },
+
+    "interfaces": {
+      "type": "object",
+      "description": "Explicit inputs and outputs between units.",
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "artifact"],
+            "properties": {
+              "from": { "type": "string" },
+              "artifact": { "type": "string" },
+              "format": { "type": "string" },
+              "cadence": { "type": "string" },
+              "required": { "type": "boolean", "default": false },
+              "method": { "$ref": "#/$defs/interface-method" },
+              "bp_type": { "$ref": "#/$defs/bp-type" }
+            }
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["to", "artifact"],
+            "properties": {
+              "to": { "type": "string" },
+              "artifact": { "type": "string" },
+              "format": { "type": "string" },
+              "cadence": { "type": "string" },
+              "method": { "$ref": "#/$defs/interface-method" },
+              "bp_type": { "$ref": "#/$defs/bp-type" }
+            }
+          }
+        }
+      }
+    },
+
+    "events": {
+      "type": "object",
+      "description": "Asynchronous notifications (pub/sub).",
+      "properties": {
+        "publishes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "subscribers": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "subscribes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "source"],
+            "properties": {
+              "name": { "type": "string" },
+              "source": { "type": "string" },
+              "triggers": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "governance": {
+      "type": "object",
+      "description": "Decision-making framework.",
+      "properties": {
+        "framework": { "$ref": "#/$defs/governance-framework" },
+        "change_process": { "type": "object" },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string" },
+              "driver": { "type": "string" },
+              "approver": { "type": "string" },
+              "contributors": { "type": "array", "items": { "type": "string" } },
+              "informed": { "type": "array", "items": { "type": "string" } },
+              "authority": { "type": "string", "enum": ["decide", "approve", "delegate", "escalate"] },
+              "quorum": { "type": "integer", "minimum": 1 },
+              "threshold": { "type": "string" },
+              "escalation": { "type": "string" },
+              "documentation": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "schedule": {
+      "type": "object",
+      "properties": {
+        "cadence": { "type": "string", "enum": ["daily", "weekly", "biweekly", "monthly", "quarterly", "biannual", "annual", "on-demand"] },
+        "day": { "type": "string" },
+        "time": { "type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$" },
+        "duration": { "type": "string", "description": "Must be string format: '30min', '2h'." },
+        "location": { "type": "string" },
+        "timezone": { "type": "string" },
+        "recurrence": { "type": "object" },
+        "exceptions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "channels": {
+      "type": "object",
+      "properties": {
+        "sync": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "name"],
+            "properties": {
+              "type": { "type": "string", "enum": ["meeting", "workshop", "standup", "review"] },
+              "name": { "type": "string" },
+              "cadence": { "type": "string" },
+              "duration": { "type": "string" },
+              "day": { "type": "string" }
+            }
+          }
+        },
+        "async": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "name"],
+            "properties": {
+              "type": { "type": "string", "enum": ["slack", "email", "teams", "wiki", "ticket-system"] },
+              "name": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["unit"],
+        "properties": {
+          "unit": { "type": "string" },
+          "type": { "type": "string", "enum": ["collaboration", "x-as-a-service", "facilitating", "blocking"] },
+          "description": { "type": "string" },
+          "health": { "type": "string", "enum": ["ok", "at-risk", "blocked"] },
+          "note": { "type": "string" },
+          "escalation_flow": {
+            "type": "string",
+            "description": "Flow ID for resolving blocked dependencies (v0.3)."
+          }
+        }
+      }
+    },
+
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "properties": {
+          "name": { "type": "string" },
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "type": { "type": "string", "enum": ["decision", "information", "escalation", "change-request"] },
+          "description": { "type": "string" },
+          "trigger": { "type": "string" },
+          "path": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["station", "action"],
+              "properties": {
+                "station": { "type": "string" },
+                "action": { "type": "string", "enum": ["identify", "propose", "review", "approve", "ratify", "reject", "escalate", "inform", "execute", "report"] },
+                "description": { "type": "string" },
+                "condition": { "type": "string" },
+                "input": { "type": "string" },
+                "output": { "type": "string" },
+                "governance": { "type": "object" },
+                "sla": { "type": "string" }
+              }
+            }
+          },
+          "communication": { "type": "array" },
+          "fallback": { "type": "object" }
+        }
+      }
+    },
+
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "url"],
+        "properties": {
+          "name": { "type": "string" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+
+    "components": {
+      "type": "object",
+      "properties": {
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "format": { "type": "string" },
+              "description": { "type": "string" },
+              "bp_type": { "$ref": "#/$defs/bp-type" },
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "authority-levels": { "type": "object" },
+        "unit-types": { "type": "object" }
+      }
+    },
+
+    "status": {
+      "type": "object",
+      "properties": {
+        "observed_version": { "type": "string" },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "status"],
+            "properties": {
+              "type": { "type": "string", "enum": ["Staffed", "MandateClear", "InterfacesHealthy", "GovernanceCompliant", "BudgetWithin", "DependenciesOk"] },
+              "status": { "type": "string", "enum": ["True", "False"] },
+              "reason": { "type": "string" },
+              "since": { "type": "string", "format": "date" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -30,7 +30,9 @@ org-as-code/
 ├── spec/                           # OPI Specification
 │   ├── opi-v0.1.md                 #   Foundation spec (669 lines)
 │   ├── opi-v0.2.md                 #   Full spec (1500+ lines, 36 validation rules)
-│   └── opi-v0.2.schema.json        #   JSON Schema for validation
+│   ├── opi-v0.2.schema.json        #   JSON Schema (V0.2)
+│   ├── opi-v0.3.md                 #   Current spec (BP integration, interface methods)
+│   └── opi-v0.3.schema.json        #   JSON Schema (V0.3)
 ├── examples/
 │   ├── governance/                 # Unit definitions
 │   │   ├── committee-structure.yaml
@@ -53,7 +55,7 @@ org-as-code/
 A Steering Committee defined as OPI — with members, schedule, governance, and interfaces:
 
 ```yaml
-opi: "0.2.0"
+opi: "0.3.0"
 
 unit:
   name: "Steering Committee"
@@ -102,28 +104,35 @@ interfaces:
       cadence: monthly
 ```
 
-## OPI Spec v0.2 Highlights
+## OPI Spec v0.3 Highlights
 
-The specification defines 15 sections for modeling organizational units:
+The specification defines 15 sections for modeling organizational units, plus org-level documents for shared defaults:
 
 | Section | Purpose |
 |---------|---------|
 | `unit` | Identity, type, purpose, mandate |
-| `members` | Roles with DACI/RAPID accountability |
+| `members` | Roles with DACI/RAPID accountability, temporal roles (start/end dates) |
 | `schedule` | Cadence with iCalendar RRULE support |
 | `governance` | Decision frameworks and authority |
-| `interfaces` | Inputs/outputs between units |
+| `interfaces` | Inputs/outputs with method types and BP integration |
 | `flows` | Cross-unit decision and escalation paths |
-| `components` | Type inheritance and custom unit types |
+| `components` | Type inheritance, custom unit types, artifact schemas |
 | `capabilities` | What the unit can do |
 | `channels` | Communication (async, meetings, wikis) |
-| `dependencies` | Unit relationships and SLAs |
+| `dependencies` | Unit relationships, SLAs, escalation flows |
 
-**Unit types:** `team` · `department` · `committee` · `meeting` · `working-group` · `circle` · `board` · `custom`
+**New in V0.3:**
+- **Org-level documents** (`org.yaml`) — organizational metadata and shared defaults
+- **Interface methods** — `unary` · `stream` · `batch` · `collaborative`
+- **BP type annotations** — link interface artifacts to Business Primitives atoms
+- **Temporal roles** — `start_date` / `end_date` on members
+- **Escalation flows** — `escalation_flow` on dependencies
+
+**Unit types:** `stream-aligned` · `platform` · `enabling` · `leadership` · `support` · `committee` · `meeting` · `working-group` · `circle`
 
 **Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
 
-→ Full spec: [`spec/opi-v0.2.md`](spec/opi-v0.2.md) | JSON Schema: [`spec/opi-v0.2.schema.json`](spec/opi-v0.2.schema.json)
+→ Full spec: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schema: [`spec/opi-v0.3.schema.json`](spec/opi-v0.3.schema.json) | Previous: [`spec/opi-v0.2.md`](spec/opi-v0.2.md)
 
 ## Templates
 
@@ -136,24 +145,31 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 ## Status
 
-🚧 **Active Development** — Spec v0.2 is feature-complete. Tooling (validation, visualization) coming next.
+**V0.3** (current) — BP integration, interface methods, temporal roles, org-level documents. JSON Schema.
+
+**V0.2** — Full spec with 36 validation rules, flows, components, status conditions.
+
+**V0.1** — Foundation release.
 
 ## Learn More
 
 - 🌐 [org-as-code.com](https://org-as-code.com) — Concept, principles, and visual guides
-- 📖 [OPI Spec v0.2](spec/opi-v0.2.md) — The full specification
+- 📖 [OPI Spec v0.3](spec/opi-v0.3.md) — Current specification
+- 📖 [OPI Spec v0.2](spec/opi-v0.2.md) — Previous version
 - 📖 [OPI Spec v0.1](spec/opi-v0.1.md) — Foundation version
 - 💡 [Examples](examples/) — Real-world configurations
 - 📐 [Templates](templates/) — Reusable organizational templates
 - 🧩 [Business Primitives](https://github.com/andreassiemes/business-primitives) — The communication layer (Atomic Business Design)
+- 🔧 [Prism](https://github.com/andreassiemes/bp-prism) — Rendering engine for BP + OPI documents
 
 ## Author
 
 **Andreas Siemes** — Principal Consultant Strategy & Transformation. Building the bridge between organizational design and software engineering.
 
-- [LinkedIn](https://www.linkedin.com/in/andreassiemes/)
 - [andreassiemes.de](https://andreassiemes.de)
+- [LinkedIn](https://www.linkedin.com/in/andreassiemes/)
 - [Business Primitives](https://businessprimitives.com)
+- [Prism](https://github.com/andreassiemes/bp-prism)
 
 ## License
 
