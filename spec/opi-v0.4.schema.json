@@ -1,0 +1,1003 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://org-as-code.com/schemas/opi-v0.4.schema.json",
+  "title": "OPI Specification v0.4",
+  "description": "Organizational Programming Interface — A machine-readable format for organizational design. Extended with Roles, Agents, and Drift Detection.",
+  "type": "object",
+  "required": ["opi", "unit"],
+  "additionalProperties": true,
+  "patternProperties": {
+    "^x-": {
+      "description": "Organization-specific extension fields"
+    }
+  },
+  "properties": {
+    "opi": {
+      "type": "string",
+      "description": "OPI Specification version this document conforms to.",
+      "pattern": "^0\\.4\\.\\d+$",
+      "examples": ["0.4.0"]
+    },
+
+    "unit": {
+      "type": "object",
+      "description": "Identity and metadata of the organizational unit.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable name",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "description": "Machine-readable identifier (slug). Defaults to slugified name.",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "type": {
+          "type": "string",
+          "description": "Unit classification.",
+          "enum": [
+            "stream-aligned", "platform", "enabling", "leadership", "support",
+            "committee", "meeting", "working-group", "circle"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Why this unit exists (1-2 sentences)."
+        },
+        "mandate": {
+          "type": "string",
+          "description": "What this unit is responsible for."
+        },
+        "owner": {
+          "type": "string",
+          "description": "Accountable person (role or name)."
+        },
+        "parent": {
+          "type": "string",
+          "description": "Parent unit reference (hierarchy)."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Discovery and categorization."
+        },
+        "version": {
+          "type": "string",
+          "description": "Structural version (e.g. '2026-Q1')."
+        },
+        "derived_from": {
+          "type": "string",
+          "description": "Base unit type from components.unit-types. Inherits defaults and required fields."
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "members": {
+      "type": "array",
+      "description": "People, roles, and their accountabilities within the unit.",
+      "items": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "Inline role identifier (v0.2 style). Mutually exclusive with role_ref."
+          },
+          "role_ref": {
+            "type": "string",
+            "description": "Reference to a role definition in components.roles (v0.4). Mutually exclusive with inline role."
+          },
+          "position": {
+            "type": "string",
+            "description": "Position title or function."
+          },
+          "name": {
+            "type": "string",
+            "description": "Person name (optional, for internal use)."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of people in this role.",
+            "minimum": 1,
+            "default": 1
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "When did person/role start in this unit (ISO 8601)."
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "When did person/role end in this unit (ISO 8601)."
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Capacity allocation (0.0 to 1.0, where 1.0 = full-time).",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "accountabilities": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "What this role is responsible for."
+          },
+          "daci": {
+            "type": "string",
+            "description": "Governance role in this unit's context.",
+            "enum": ["driver", "approver", "contributor", "informed"]
+          },
+          "attendance": {
+            "type": "string",
+            "description": "Member attendance type.",
+            "enum": ["permanent", "optional", "on-demand"],
+            "default": "permanent"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+
+    "capabilities": {
+      "type": "object",
+      "description": "What this unit provides to the organization.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["core", "support", "advisory"]
+          },
+          "cadence": {
+            "type": "string"
+          },
+          "sla": {
+            "type": "object",
+            "properties": {
+              "response_time": { "type": "string" },
+              "quality": { "type": "string" }
+            }
+          },
+          "process": {
+            "type": "object",
+            "properties": {
+              "trigger": { "type": "string" },
+              "steps": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Simple ordered step list (single-unit)."
+              },
+              "lanes": {
+                "type": "array",
+                "description": "Multi-unit process with swimlanes (v0.2).",
+                "items": {
+                  "type": "object",
+                  "required": ["unit", "steps"],
+                  "properties": {
+                    "unit": {
+                      "type": "string",
+                      "description": "Unit responsible for this lane."
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          { "type": "string" },
+                          {
+                            "type": "object",
+                            "required": ["name"],
+                            "properties": {
+                              "name": { "type": "string" },
+                              "action": {
+                                "type": "string",
+                                "enum": ["identify", "propose", "review", "approve", "ratify", "reject", "escalate", "inform", "execute", "report"]
+                              },
+                              "duration": { "type": "string" },
+                              "gate": { "type": "string" }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "handoff": {
+                      "type": "string",
+                      "description": "What is passed to the next lane."
+                    }
+                  }
+                }
+              },
+              "input": {
+                "type": "object",
+                "properties": {
+                  "artifact": { "type": "string" },
+                  "format": { "type": "string" }
+                }
+              },
+              "output": {
+                "type": "object",
+                "properties": {
+                  "artifact": { "type": "string" },
+                  "format": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+
+    "interfaces": {
+      "type": "object",
+      "description": "Explicit inputs and outputs between this unit and others.",
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "artifact"],
+            "properties": {
+              "from": { "type": "string" },
+              "artifact": { "type": "string" },
+              "format": { "type": "string" },
+              "cadence": { "type": "string" },
+              "required": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["to", "artifact"],
+            "properties": {
+              "to": { "type": "string" },
+              "artifact": { "type": "string" },
+              "format": { "type": "string" },
+              "cadence": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "events": {
+      "type": "object",
+      "description": "Asynchronous notifications (pub/sub).",
+      "properties": {
+        "publishes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "subscribers": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "subscribes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "source"],
+            "properties": {
+              "name": { "type": "string" },
+              "source": { "type": "string" },
+              "triggers": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "governance": {
+      "type": "object",
+      "description": "Decision-making framework.",
+      "properties": {
+        "framework": {
+          "type": "string",
+          "enum": ["DACI", "RAPID", "OVIS", "consent", "consensus", "autocratic"]
+        },
+        "change_process": {
+          "type": "object",
+          "description": "How structural changes to this unit are governed (v0.2).",
+          "properties": {
+            "proposal": {
+              "type": "string",
+              "description": "How proposals are submitted (e.g. 'Pull Request on org-as-code repository')."
+            },
+            "review": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["role", "action"],
+                "properties": {
+                  "role": { "type": "string" },
+                  "action": {
+                    "type": "string",
+                    "enum": ["review", "approve", "inform"]
+                  },
+                  "deadline": { "type": "string" },
+                  "quorum": { "type": "integer", "minimum": 1 }
+                }
+              }
+            },
+            "approval": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["role", "action"],
+                "properties": {
+                  "role": { "type": "string" },
+                  "action": {
+                    "type": "string",
+                    "enum": ["approve", "ratify"]
+                  },
+                  "quorum": { "type": "integer", "minimum": 1 }
+                }
+              }
+            },
+            "communication": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["to", "trigger"],
+                "properties": {
+                  "to": { "type": "string" },
+                  "trigger": { "type": "string" },
+                  "format": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string" },
+              "driver": { "type": "string" },
+              "approver": { "type": "string" },
+              "contributors": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "informed": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "authority": {
+                "type": "string",
+                "enum": ["decide", "approve", "delegate", "escalate"]
+              },
+              "quorum": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "threshold": { "type": "string" },
+              "escalation": { "type": "string" },
+              "documentation": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "schedule": {
+      "type": "object",
+      "description": "When this unit meets — time, cadence, recurrence.",
+      "properties": {
+        "cadence": {
+          "type": "string",
+          "enum": ["daily", "weekly", "biweekly", "monthly", "quarterly", "biannual", "annual", "on-demand"]
+        },
+        "day": {
+          "type": "string",
+          "description": "Scheduled day(s), e.g. 'Monday' or 'Monday,Wednesday'."
+        },
+        "time": {
+          "type": "string",
+          "description": "Start time in 24h format.",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "duration": {
+          "type": "string",
+          "description": "Expected length, e.g. '30min', '90min', '2h'."
+        },
+        "location": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "IANA timezone, e.g. 'Europe/Berlin'."
+        },
+        "recurrence": {
+          "type": "object",
+          "required": ["type", "value"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "rrule"
+            },
+            "value": {
+              "type": "string",
+              "description": "iCalendar RRULE string."
+            }
+          }
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Date when the meeting does NOT occur."
+          }
+        }
+      }
+    },
+
+    "channels": {
+      "type": "object",
+      "description": "Communication endpoints.",
+      "properties": {
+        "sync": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "name"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["meeting", "workshop", "standup", "review"]
+              },
+              "name": { "type": "string" },
+              "cadence": { "type": "string" },
+              "duration": { "type": "string" },
+              "day": { "type": "string" },
+              "rituals": {
+                "type": "object",
+                "properties": {
+                  "pre": { "type": "array", "items": { "type": "string" } },
+                  "during": { "type": "array", "items": { "type": "string" } },
+                  "post": { "type": "array", "items": { "type": "string" } }
+                }
+              },
+              "$ref": {
+                "type": "string",
+                "description": "Reference to a meeting-type unit."
+              }
+            }
+          }
+        },
+        "async": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "name"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["slack", "email", "teams", "wiki", "ticket-system"]
+              },
+              "name": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "dependencies": {
+      "type": "array",
+      "description": "Explicit dependencies on other units.",
+      "items": {
+        "type": "object",
+        "required": ["unit"],
+        "properties": {
+          "unit": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["collaboration", "x-as-a-service", "facilitating", "blocking"]
+          },
+          "description": { "type": "string" },
+          "health": {
+            "type": "string",
+            "enum": ["ok", "at-risk", "blocked"]
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
+
+    "flows": {
+      "type": "array",
+      "description": "Cross-unit decision and information flows.",
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable flow name."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["decision", "information", "escalation", "change-request"]
+          },
+          "description": { "type": "string" },
+          "trigger": { "type": "string" },
+          "path": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["station", "action"],
+              "properties": {
+                "station": { "type": "string" },
+                "action": {
+                  "type": "string",
+                  "enum": ["identify", "propose", "review", "approve", "ratify", "reject", "escalate", "inform", "execute", "report"]
+                },
+                "description": { "type": "string" },
+                "condition": { "type": "string" },
+                "input": { "type": "string" },
+                "output": { "type": "string" },
+                "governance": {
+                  "type": "object",
+                  "properties": {
+                    "framework": { "type": "string" },
+                    "driver": { "type": "string" },
+                    "approver": { "type": "string" },
+                    "contributors": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "informed": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                },
+                "sla": { "type": "string" }
+              }
+            }
+          },
+          "communication": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["trigger", "to"],
+              "properties": {
+                "trigger": { "type": "string" },
+                "to": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "artifact": { "type": "string" },
+                "format": { "type": "string" },
+                "channel": { "type": "string" }
+              }
+            }
+          },
+          "fallback": {
+            "type": "object",
+            "required": ["timeout", "action"],
+            "properties": {
+              "timeout": { "type": "string" },
+              "action": {
+                "type": "string",
+                "enum": ["escalate", "auto-approve", "reject", "notify"]
+              },
+              "to": { "type": "string" },
+              "notify": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "flow": {
+      "description": "Standalone flow document (alternative to inline flows array).",
+      "$ref": "#/properties/flows/items"
+    },
+
+    "references": {
+      "type": "array",
+      "description": "Links to external documentation.",
+      "items": {
+        "type": "object",
+        "required": ["name", "url"],
+        "properties": {
+          "name": { "type": "string" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+
+    "components": {
+      "type": "object",
+      "description": "Reusable definitions, referenced via $ref.",
+      "properties": {
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "format": { "type": "string" },
+              "description": { "type": "string" },
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "authority-levels": {
+          "type": "object",
+          "additionalProperties": { "type": "object" }
+        },
+        "unit-types": {
+          "type": "object",
+          "description": "Custom unit type definitions for type inheritance (v0.2).",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["description"],
+            "properties": {
+              "description": { "type": "string" },
+              "base_type": {
+                "type": "string",
+                "enum": [
+                  "stream-aligned", "platform", "enabling", "leadership", "support",
+                  "committee", "meeting", "working-group", "circle"
+                ]
+              },
+              "derived_from": {
+                "type": "string",
+                "description": "Parent custom type for type hierarchies."
+              },
+              "required_members": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Roles that MUST be present in units of this type."
+              },
+              "required_fields": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Top-level fields that MUST be present (e.g. schedule, governance)."
+              },
+              "defaults": {
+                "type": "object",
+                "description": "Default values merged into units of this type.",
+                "additionalProperties": true
+              },
+              "template": {
+                "type": "object",
+                "description": "Template sections (e.g. channels) pre-configured for this type.",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "roles": {
+          "type": "object",
+          "description": "Reusable role definitions referenced via role_ref in members[] (v0.4).",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["title", "purpose", "accountabilities"],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Human-readable role title."
+              },
+              "level": {
+                "type": "string",
+                "description": "Seniority level.",
+                "enum": ["junior", "mid", "senior", "lead", "principal", "executive"]
+              },
+              "job_family": {
+                "type": "string",
+                "description": "Job family identifier for HR-tool mapping."
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Role purpose statement."
+              },
+              "accountabilities": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1,
+                "description": "Key accountabilities."
+              },
+              "skills": {
+                "type": "object",
+                "description": "Required and preferred skills.",
+                "properties": {
+                  "required": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "minItems": 1
+                  },
+                  "preferred": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              },
+              "qualifications": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Formal qualifications and experience requirements."
+              },
+              "decision_authority": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["scope", "framework"],
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "description": "Decision scope."
+                    },
+                    "framework": {
+                      "type": "string",
+                      "description": "Governance framework applied to this decision."
+                    },
+                    "daci": {
+                      "type": "string",
+                      "description": "DACI role in context of this decision.",
+                      "enum": ["driver", "approver", "contributor", "informed"]
+                    }
+                  }
+                },
+                "description": "Explicit decision authority."
+              },
+              "reports_to": {
+                "type": "string",
+                "description": "Reference to parent role or unit."
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "agents": {
+          "type": "object",
+          "description": "Reusable agent type definitions (v0.4).",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["name", "type", "purpose", "capabilities", "constraints", "governance", "owner"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Agent name."
+              },
+              "type": {
+                "type": "string",
+                "description": "Agent classification.",
+                "enum": ["analytical", "operational", "advisory", "orchestrator"]
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Why this agent exists."
+              },
+              "capabilities": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1,
+                "description": "What this agent can do."
+              },
+              "constraints": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1,
+                "description": "Limitations and guardrails."
+              },
+              "governance": {
+                "type": "object",
+                "required": ["may_read", "may_write", "may_decide", "audit_trail"],
+                "description": "Agent permissions and governance.",
+                "properties": {
+                  "may_read": {
+                    "type": "boolean",
+                    "description": "Can read org data."
+                  },
+                  "may_write": {
+                    "type": "boolean",
+                    "description": "Can create artifacts (reports, documents). NOT modification of OPI spec/status files."
+                  },
+                  "may_decide": {
+                    "type": "boolean",
+                    "description": "Can make organizational decisions."
+                  },
+                  "audit_trail": {
+                    "type": "string",
+                    "description": "Audit mechanism.",
+                    "enum": ["git", "database", "event-log", "combined"]
+                  },
+                  "framework": {
+                    "type": "string",
+                    "description": "Governance framework. Required if may_decide is true."
+                  }
+                }
+              },
+              "model": {
+                "type": "string",
+                "description": "LLM model or agent system."
+              },
+              "owner": {
+                "type": "string",
+                "description": "Accountable human or unit."
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+
+    "agents": {
+      "type": "array",
+      "description": "Agent instances scoped to this unit (v0.4).",
+      "items": {
+        "type": "object",
+        "required": ["ref", "scope"],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Reference to components.agents.<agent-id>."
+          },
+          "scope": {
+            "type": "object",
+            "required": ["units", "data"],
+            "description": "Agent scope and permissions.",
+            "properties": {
+              "units": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1,
+                "description": "Units this agent is scoped to."
+              },
+              "data": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1,
+                "description": "Data types this agent can access."
+              },
+              "governance": {
+                "type": "string",
+                "description": "Governance level for this agent in this unit.",
+                "enum": ["none", "read-only", "full"],
+                "default": "none"
+              }
+            }
+          },
+          "schedule": {
+            "type": "object",
+            "description": "When this agent runs.",
+            "properties": {
+              "cadence": {
+                "type": "string",
+                "description": "Execution frequency.",
+                "enum": ["on-demand", "hourly", "daily", "weekly", "monthly", "quarterly"]
+              },
+              "day": {
+                "type": "string",
+                "description": "Scheduled day(s)."
+              },
+              "time": {
+                "type": "string",
+                "description": "Start time in 24h format.",
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+              },
+              "condition": {
+                "type": "string",
+                "description": "Conditional trigger."
+              }
+            }
+          },
+          "disabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this agent instance is disabled."
+          }
+        }
+      }
+    },
+
+    "status": {
+      "type": "object",
+      "description": "Actual state (vs. desired state in spec). Complete conformance level.",
+      "properties": {
+        "observed_version": {
+          "type": "string",
+          "description": "Last version reviewed by leadership."
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "status"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["Staffed", "MandateClear", "InterfacesHealthy", "GovernanceCompliant", "BudgetWithin", "DependenciesOk"]
+              },
+              "status": {
+                "type": "string",
+                "enum": ["True", "False"]
+              },
+              "reason": { "type": "string" },
+              "since": { "type": "string", "format": "date" }
+            }
+          }
+        },
+        "drift": {
+          "type": "array",
+          "description": "Spec-vs-status deviations tracked over time (v0.4).",
+          "items": {
+            "type": "object",
+            "required": ["field", "expected", "actual", "severity", "since", "trend"],
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "Spec field this drift refers to (JSON Pointer syntax)."
+              },
+              "expected": {
+                "description": "Desired value according to spec."
+              },
+              "actual": {
+                "description": "Observed value from status."
+              },
+              "delta": {
+                "description": "Quantified difference.",
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "number" }
+                ]
+              },
+              "severity": {
+                "type": "string",
+                "description": "Impact level.",
+                "enum": ["info", "warning", "critical"]
+              },
+              "since": {
+                "type": "string",
+                "format": "date",
+                "description": "When drift was first detected."
+              },
+              "trend": {
+                "type": "string",
+                "description": "Direction of change.",
+                "enum": ["improving", "stable", "worsening"]
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "Additional context."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
