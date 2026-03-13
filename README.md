@@ -31,8 +31,10 @@ org-as-code/
 │   ├── opi-v0.1.md                 #   Foundation spec (669 lines)
 │   ├── opi-v0.2.md                 #   Full spec (1500+ lines, 36 validation rules)
 │   ├── opi-v0.2.schema.json        #   JSON Schema (V0.2)
-│   ├── opi-v0.3.md                 #   Current spec (BP integration, interface methods)
-│   └── opi-v0.3.schema.json        #   JSON Schema (V0.3)
+│   ├── opi-v0.3.md                 #   Current stable (BP integration, interface methods)
+│   ├── opi-v0.3.schema.json        #   JSON Schema (V0.3)
+│   ├── opi-v0.4.md                 #   Draft: Roles, Agents, Drift Detection (1689 lines)
+│   └── opi-v0.4.schema.json        #   JSON Schema (V0.4, backward-compatible)
 ├── examples/
 │   ├── governance/                 # Unit definitions
 │   │   ├── committee-structure.yaml
@@ -104,9 +106,9 @@ interfaces:
       cadence: monthly
 ```
 
-## OPI Spec v0.3 Highlights
+## OPI Spec Highlights
 
-The specification defines 15 sections for modeling organizational units, plus org-level documents for shared defaults:
+The specification defines 15+ sections for modeling organizational units, plus org-level documents for shared defaults:
 
 | Section | Purpose |
 |---------|---------|
@@ -116,12 +118,19 @@ The specification defines 15 sections for modeling organizational units, plus or
 | `governance` | Decision frameworks and authority |
 | `interfaces` | Inputs/outputs with method types and BP integration |
 | `flows` | Cross-unit decision and escalation paths |
-| `components` | Type inheritance, custom unit types, artifact schemas |
+| `components` | Type inheritance, custom unit types, artifact schemas, **roles**, **agents** |
 | `capabilities` | What the unit can do |
 | `channels` | Communication (async, meetings, wikis) |
 | `dependencies` | Unit relationships, SLAs, escalation flows |
+| `status` | Conditions, health signals, **drift detection** |
 
-**New in V0.3:**
+**New in V0.4 (Draft):**
+- **`components.roles`** — reusable role definitions with responsibilities, authority levels, and time commitment
+- **`agents[]`** — AI/automation agents bound to units with scope, permissions, and human-in-the-loop policies
+- **`status.drift[]`** — detect divergence between spec and reality (attendance, decision, cadence, membership drift)
+- **15 new validation rules** (R48–R62), backward-compatible with V0.3
+
+**V0.3 (Stable):**
 - **Org-level documents** (`org.yaml`) — organizational metadata and shared defaults
 - **Interface methods** — `unary` · `stream` · `batch` · `collaborative`
 - **BP type annotations** — link interface artifacts to Business Primitives atoms
@@ -132,7 +141,7 @@ The specification defines 15 sections for modeling organizational units, plus or
 
 **Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
 
-→ Full spec: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schema: [`spec/opi-v0.3.schema.json`](spec/opi-v0.3.schema.json) | Previous: [`spec/opi-v0.2.md`](spec/opi-v0.2.md)
+→ Latest: [`spec/opi-v0.4.md`](spec/opi-v0.4.md) (Draft) | Stable: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schemas: [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json)
 
 ## Templates
 
@@ -145,7 +154,9 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 ## Status
 
-**V0.3** (current) — BP integration, interface methods, temporal roles, org-level documents. JSON Schema.
+**V0.4** (draft) — Roles, Agents, Drift Detection. 15 new rules (R48–R62). Backward-compatible with V0.3.
+
+**V0.3** (stable) — BP integration, interface methods, temporal roles, org-level documents. JSON Schema.
 
 **V0.2** — Full spec with 36 validation rules, flows, components, status conditions.
 
@@ -154,7 +165,8 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 ## Learn More
 
 - 🌐 [org-as-code.com](https://org-as-code.com) — Concept, principles, and visual guides
-- 📖 [OPI Spec v0.3](spec/opi-v0.3.md) — Current specification
+- 📖 [OPI Spec v0.4](spec/opi-v0.4.md) — Draft: Roles, Agents, Drift Detection
+- 📖 [OPI Spec v0.3](spec/opi-v0.3.md) — Stable specification
 - 📖 [OPI Spec v0.2](spec/opi-v0.2.md) — Previous version
 - 📖 [OPI Spec v0.1](spec/opi-v0.1.md) — Foundation version
 - 💡 [Examples](examples/) — Real-world configurations
