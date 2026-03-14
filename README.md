@@ -33,8 +33,9 @@ org-as-code/
 │   ├── opi-v0.2.schema.json        #   JSON Schema (V0.2)
 │   ├── opi-v0.3.md                 #   Current stable (BP integration, interface methods)
 │   ├── opi-v0.3.schema.json        #   JSON Schema (V0.3)
-│   ├── opi-v0.4.md                 #   Draft: Roles, Agents, Drift Detection (1689 lines)
-│   └── opi-v0.4.schema.json        #   JSON Schema (V0.4, backward-compatible)
+│   ├── opi-v0.4.md                 #   Roles, Agents, Drift Detection (1689 lines)
+│   ├── opi-v0.4.schema.json        #   JSON Schema (V0.4, backward-compatible)
+│   └── opi-v0.5.md                 #   Draft: Decision Graph, Agent Context API (1029 lines)
 ├── examples/
 │   ├── governance/                 # Unit definitions
 │   │   ├── committee-structure.yaml
@@ -124,7 +125,14 @@ The specification defines 15+ sections for modeling organizational units, plus o
 | `dependencies` | Unit relationships, SLAs, escalation flows |
 | `status` | Conditions, health signals, **drift detection** |
 
-**New in V0.4 (Draft):**
+**New in V0.5 (Draft):**
+- **`decisions[]`** — Decision Graph with triggers, consequences, revisions. Governance audit trail, impact analysis, cycle detection (DAG)
+- **Agent Context API** — `escalation_path`, `scope` extensions, `context_endpoint` config. JSON response schema for agent runtime
+- **MCP Server integration** — Model Context Protocol tools for AI agent governance context
+- **`orgspec` CLI** — Reference implementation: `list`, `context`, `lint`, `decisions`, `maturity`, `diff`, `export`
+- **9 new validation rules** (R63–R71), backward-compatible with V0.4
+
+**V0.4:**
 - **`components.roles`** — reusable role definitions with responsibilities, authority levels, and time commitment
 - **`agents[]`** — AI/automation agents bound to units with scope, permissions, and human-in-the-loop policies
 - **`status.drift[]`** — detect divergence between spec and reality (attendance, decision, cadence, membership drift)
@@ -141,7 +149,7 @@ The specification defines 15+ sections for modeling organizational units, plus o
 
 **Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
 
-→ Latest: [`spec/opi-v0.4.md`](spec/opi-v0.4.md) (Draft) | Stable: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schemas: [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json)
+→ Latest: [`spec/opi-v0.5.md`](spec/opi-v0.5.md) (Draft) | Stable: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schemas: [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json)
 
 ## Templates
 
@@ -154,7 +162,9 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 ## Status
 
-**V0.4** (draft) — Roles, Agents, Drift Detection. 15 new rules (R48–R62). Backward-compatible with V0.3.
+**V0.5** (draft) — Decision Graph, Agent Context API, MCP integration, `orgspec` CLI. 9 new rules (R63–R71). Backward-compatible with V0.4.
+
+**V0.4** — Roles, Agents, Drift Detection. 15 new rules (R48–R62). Backward-compatible with V0.3.
 
 **V0.3** (stable) — BP integration, interface methods, temporal roles, org-level documents. JSON Schema.
 
@@ -165,7 +175,8 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 ## Learn More
 
 - 🌐 [org-as-code.com](https://org-as-code.com) — Concept, principles, and visual guides
-- 📖 [OPI Spec v0.4](spec/opi-v0.4.md) — Draft: Roles, Agents, Drift Detection
+- 📖 [OPI Spec v0.5](spec/opi-v0.5.md) — Draft: Decision Graph, Agent Context API
+- 📖 [OPI Spec v0.4](spec/opi-v0.4.md) — Roles, Agents, Drift Detection
 - 📖 [OPI Spec v0.3](spec/opi-v0.3.md) — Stable specification
 - 📖 [OPI Spec v0.2](spec/opi-v0.2.md) — Previous version
 - 📖 [OPI Spec v0.1](spec/opi-v0.1.md) — Foundation version
