@@ -35,15 +35,18 @@ org-as-code/
 │   ├── opi-v0.3.schema.json        #   JSON Schema (V0.3)
 │   ├── opi-v0.4.md                 #   Roles, Agents, Drift Detection (1689 lines)
 │   ├── opi-v0.4.schema.json        #   JSON Schema (V0.4, backward-compatible)
-│   └── opi-v0.5.md                 #   Draft: Decision Graph, Agent Context API (1029 lines)
+│   ├── opi-v0.5.md                 #   Decision Graph, Agent Context API (1029 lines)
+│   ├── opi-v0.6.md                 #   Draft: OKF Interop & Knowledge Graph
+│   └── opi-v0.6.schema.json        #   JSON Schema (V0.6, backward-compatible)
 ├── examples/
 │   ├── governance/                 # Unit definitions
 │   │   ├── committee-structure.yaml
 │   │   ├── steering-committee.yaml #   Committee with DACI, schedule, interfaces
 │   │   └── delivery-lead-sync.yaml #   Meeting with facilitator, weekly cadence
-│   └── flows/                      # Cross-unit decision flows
-│       ├── budget-approval.yaml    #   Decision flow with conditional routing
-│       └── escalation.yaml         #   Escalation path with time-based triggers
+│   ├── flows/                      # Cross-unit decision flows
+│   │   ├── budget-approval.yaml    #   Decision flow with conditional routing
+│   │   └── escalation.yaml         #   Escalation path with time-based triggers
+│   └── okf-export/                 # Generated OKF v0.1 bundle (export projection)
 ├── templates/                      # Reusable org templates
 │   ├── consulting-firm.yaml        #   7 custom types for consulting orgs
 │   └── spotify-model.yaml          #   Squad, Tribe, Chapter, Guild types
@@ -125,6 +128,15 @@ The specification defines 15+ sections for modeling organizational units, plus o
 | `dependencies` | Unit relationships, SLAs, escalation flows |
 | `status` | Conditions, health signals, **drift detection** |
 
+**New in V0.6 (Draft):**
+- **OKF Export Profile** — lossless mapping of an OPI document set to a conformant [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog) v0.1 bundle, with a controlled OPI→OKF `type` vocabulary. The OPI source stays the strict truth; the bundle is a portable, agent-readable projection
+- **`knowledge[]`** — first-class Knowledge Graph: typed knowledge concepts (playbooks, references, definitions) beside structure, bidirectionally linked via `knowledge_refs[]` / `relates_to[]`
+- **OKF Import** — round-trip ingestion of a conformant OKF bundle back into OPI (`orgspec import --okf`): lossless out, best-effort in
+- **Native `log.md` provenance** — OKF's `log.md` convention adopted natively as the provenance surface, plus a freshness rule (passed `review_date` with no later log entry → drift warning)
+- **Permissive Consumer Model** — producers and the validator stay strict; *consumers* tolerate unknown keys, types, broken links, and higher-minor enum values
+- **`orgspec` CLI** — new commands: `orgspec export --target okf`, `orgspec import --okf`, `orgspec provenance`
+- **15 new validation rules** (R72–R86), backward-compatible with V0.5
+
 **New in V0.5 (Draft):**
 - **`decisions[]`** — Decision Graph with triggers, consequences, revisions. Governance audit trail, impact analysis, cycle detection (DAG)
 - **Agent Context API** — `escalation_path`, `scope` extensions, `context_endpoint` config. JSON response schema for agent runtime
@@ -149,7 +161,7 @@ The specification defines 15+ sections for modeling organizational units, plus o
 
 **Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
 
-→ Latest: [`spec/opi-v0.5.md`](spec/opi-v0.5.md) (Draft) | Stable: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schemas: [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json)
+→ Latest: [`spec/opi-v0.6.md`](spec/opi-v0.6.md) (Draft) | Stable: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schemas: [V0.6](spec/opi-v0.6.schema.json) · [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json)
 
 ## Templates
 
@@ -161,6 +173,8 @@ Pre-built organizational templates with custom unit types:
 Templates use OPI's type inheritance (`components.types`) so you can define your organization's building blocks once and instantiate them consistently.
 
 ## Status
+
+**V0.6** (draft) — OKF Interoperability & Knowledge Graph: lossless OKF export, first-class `knowledge[]` entity, OKF round-trip import, native `log.md` provenance, permissive consumer model. Validation Rules 72–86. Backward-compatible with V0.5.
 
 **V0.5** (draft) — Decision Graph, Agent Context API, MCP integration, `orgspec` CLI. 9 new rules (R63–R71). Backward-compatible with V0.4.
 
@@ -175,6 +189,7 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 ## Learn More
 
 - 🌐 [org-as-code.com](https://org-as-code.com) — Concept, principles, and visual guides
+- 📖 [OPI Spec v0.6](spec/opi-v0.6.md) — Draft: OKF Interoperability & Knowledge Graph
 - 📖 [OPI Spec v0.5](spec/opi-v0.5.md) — Draft: Decision Graph, Agent Context API
 - 📖 [OPI Spec v0.4](spec/opi-v0.4.md) — Roles, Agents, Drift Detection
 - 📖 [OPI Spec v0.3](spec/opi-v0.3.md) — Stable specification
@@ -184,6 +199,7 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 - 📐 [Templates](templates/) — Reusable organizational templates
 - 🧩 [Business Primitives](https://github.com/andreassiemes/business-primitives) — The communication layer (Atomic Business Design)
 - 🔧 [Prism](https://github.com/andreassiemes/bp-prism) — Rendering engine for BP + OPI documents
+- 🌍 [Open Knowledge Format (OKF)](https://github.com/GoogleCloudPlatform/knowledge-catalog) — Google's open substrate for agent-readable knowledge. Same instinct, different layer — OKF is the open substrate, OPI is the strict typed governance layer on top
 
 ## Author
 

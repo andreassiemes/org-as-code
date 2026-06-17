@@ -1,0 +1,46 @@
+opi: "0.6.0"
+
+unit:
+  id: product
+  name: "Product Organization"
+  purpose: "Define product strategy, roadmap, and user success metrics"
+  type: stream-aligned
+  knowledge_refs:
+    - jtbd-framework
+
+gremien:
+  - id: product-board
+    name: "Product Board"
+    purpose: "Quarterly product direction and prioritization"
+    cadence: quarterly
+    members: [product-lead, head-of-product, engineering-lead]
+
+decisions:
+  - id: dec-P001
+    date: 2026-01-20
+    gremium: product-board
+    title: "Adopt Jobs-to-Be-Done framework as primary discovery methodology for 2026"
+    driver: product-lead
+    approver: head-of-product
+    status: active
+    rationale: |
+      Customer research in Q4 2025 revealed feature requests were driven by job stories rather
+      than preference surveys. JTBD provides a more stable basis for roadmap decisions.
+    scope: "Product Organization, Design, User Research"
+    review_date: 2026-07-01
+    knowledge_refs:
+      - jtbd-framework
+
+knowledge:
+  - id: jtbd-framework
+    type: Playbook
+    title: "Jobs-to-Be-Done Framework"
+    description: "Discovery methodology framing demand as the jobs customers hire a product to do."
+    tags: [discovery, product, methodology]
+    relates_to:
+      - product
+      - dec-P001
+    body: |
+      # Examples
+      A job story: *When [situation], I want to [motivation], so I can [outcome].*
+    timestamp: 2026-06-10T12:00:00Z
