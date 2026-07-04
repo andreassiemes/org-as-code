@@ -1,46 +1,162 @@
+# OPI v0.6 source document — Steering Committee (consulting firm, anonymized).
+# Upgraded from examples/governance/steering-committee.yaml (v0.2) to the v0.6 shape.
+# This file is the single source of truth (D9); the surrounding OKF bundle is the
+# generated projection produced by `orgspec export --target okf`.
+
 opi: "0.6.0"
 
+org:
+  id: delivery-org
+  name: "Delivery Organization"
+  purpose: "Client delivery organization of a mid-size consulting firm"
+
+components:
+  roles:
+    coo:
+      title: "COO"
+      level: executive
+      purpose: "Chairs the Steering Committee; final decision authority for delivery-organization matters"
+      accountabilities:
+        - final-decision-authority
+        - escalation-target
+    head-of-delivery:
+      title: "Head of Delivery"
+      level: senior
+      purpose: "Drives decision proposals into the Steering Committee and reports delivery metrics"
+      accountabilities:
+        - prepare-decision-proposals
+        - report-delivery-metrics
+
+  agents:
+    governance-advisor:
+      name: "Governance Advisor Agent"
+      type: analytical
+      purpose: "Answers governance queries against the decision log and flags stale decisions before each Steering Committee"
+      capabilities:
+        - "Read decisions and drift from the OPI document set"
+        - "Prepare pre-read summaries for the Steering Committee"
+
 unit:
-  id: product
-  name: "Product Organization"
-  purpose: "Define product strategy, roadmap, and user success metrics"
+  id: delivery
+  name: "Delivery Organization"
+  purpose: "Strategic steering of the delivery organization: budget, headcount, restructuring, initiative prioritization"
   type: stream-aligned
+  owner: coo
+  members:
+    - role_ref: coo
+    - role_ref: head-of-delivery
+  dependencies:
+    - unit: people-culture
+      type: x-as-a-service
+      description: "Headcount data and culture impact assessments"
+      health: at-risk
   knowledge_refs:
-    - jtbd-framework
+    - daci-framework
+    - decision-log
 
 gremien:
-  - id: product-board
-    name: "Product Board"
-    purpose: "Quarterly product direction and prioritization"
-    cadence: quarterly
-    members: [product-lead, head-of-product, engineering-lead]
+  - id: steering-committee
+    name: "Steering Committee"
+    purpose: "Strategic decisions for the delivery organization: budget >10k EUR, headcount, restructuring, prioritization"
+    cadence: biweekly
+    members: [coo, head-of-delivery, head-of-sales, head-of-people-culture]
+    knowledge_refs:
+      - daci-framework
+  - id: delivery-lead-sync
+    name: "Delivery Lead Sync"
+    purpose: "Operational sync of delivery leads; primary feeder of decision requests into the Steering Committee"
+    cadence: biweekly
+    members: [head-of-delivery, delivery-leads]
 
 decisions:
-  - id: dec-P001
-    date: 2026-01-20
-    gremium: product-board
-    title: "Adopt Jobs-to-Be-Done framework as primary discovery methodology for 2026"
-    driver: product-lead
-    approver: head-of-product
+  - id: dec-S001
+    date: 2026-02-12
+    gremium: steering-committee
+    title: "Approve analytics platform migration budget (45k EUR)"
+    driver: head-of-delivery
+    approver: coo
     status: active
+    decision_type: budget-allocation
     rationale: |
-      Customer research in Q4 2025 revealed feature requests were driven by job stories rather
-      than preference surveys. JTBD provides a more stable basis for roadmap decisions.
-    scope: "Product Organization, Design, User Research"
-    review_date: 2026-07-01
+      The legacy analytics platform causes recurring data-quality incidents in three ETL
+      pipelines and blocks the monthly delivery report. Migration removes the largest
+      single source of interface drift toward the executive team.
+    scope: "Delivery Organization, Finance"
+    review_date: 2026-08-01
     knowledge_refs:
-      - jtbd-framework
+      - decision-log
+  - id: dec-S002
+    date: 2026-03-11
+    gremium: steering-committee
+    title: "Introduce a mandatory decision log for all steering decisions"
+    driver: head-of-delivery
+    approver: coo
+    status: active
+    decision_type: governance
+    rationale: |
+      Two of three recent reprioritizations happened without contributor review. Root
+      cause is a tooling gap: DACI is defined but decisions are not logged. A mandatory
+      decision log makes the framework auditable and closes the governance drift.
+    scope: "Steering Committee"
+    review_date: 2026-06-01
+    knowledge_refs:
+      - daci-framework
+      - decision-log
+
+agents:
+  - ref: governance-advisor
+    scope:
+      units: [delivery]
+      data: [decisions, governance, status]
+      governance: read-only
+      gremien: [steering-committee]
+      decision_types: [budget-allocation, governance]
+    schedule:
+      cadence: biweekly
+      condition: "48h before each Steering Committee"
+    escalation_path:
+      - head-of-delivery
+      - coo
+
+status:
+  drift:
+    - field: governance.framework
+      expected: "DACI (driver prepares, approver decides with contributor input)"
+      actual: "2 of 3 recent reprioritizations happened without contributor review"
+      delta: "Framework not followed in practice"
+      severity: warning
+      since: 2025-11-01
+      trend: improving
+      note: "Decision log mandated by dec-S002 (2026-03-11); first review completed 2026-06-10."
 
 knowledge:
-  - id: jtbd-framework
+  - id: daci-framework
     type: Playbook
-    title: "Jobs-to-Be-Done Framework"
-    description: "Discovery methodology framing demand as the jobs customers hire a product to do."
-    tags: [discovery, product, methodology]
+    title: "DACI Decision Framework"
+    description: "Decision-making framework assigning Driver, Approver, Contributor, and Informed roles to every steering decision."
+    tags: [governance, decision-making, methodology]
     relates_to:
-      - product
-      - dec-P001
+      - delivery
+      - steering-committee
+      - dec-S002
     body: |
       # Examples
-      A job story: *When [situation], I want to [motivation], so I can [outcome].*
+      For a budget decision >10k EUR: the Head of Delivery *drives* the proposal, the COO
+      *approves*, CFO and Head of Sales *contribute*, unit leads and board are *informed*.
+
+      # Citations
+      [1] [Atlassian DACI playbook](https://www.atlassian.com/team-playbook/plays/daci)
+    citations:
+      - "https://www.atlassian.com/team-playbook/plays/daci"
+    timestamp: 2026-06-10T12:00:00Z
+  - id: decision-log
+    type: Reference
+    title: "Steering Decision Log"
+    description: "Canonical log of all Steering Committee decisions, one record per decision, linked from meeting minutes."
+    resource: "https://wiki.example.com/steering/decisions"
+    tags: [governance, provenance]
+    relates_to:
+      - steering-committee
+      - dec-S001
+      - dec-S002
     timestamp: 2026-06-10T12:00:00Z

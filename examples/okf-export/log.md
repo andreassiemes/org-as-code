@@ -1,8 +1,17 @@
 # Update Log
 
-## 2026-06-17
-* **Creation**: Exported OPI document set to OKF bundle.
-* **Creation**: Added knowledge concept jtbd-framework.
+## 2026-07-04
+* **Creation**: Exported OPI document set (`source/opi.yaml`, OPI v0.6) to OKF v0.1 bundle.
 
-## 2026-01-20
-* **Update**: dec-P001 enacted (JTBD adopted as 2026 discovery methodology).
+## 2026-06-10
+* **Update**: [dec-S002](/decisions/dec-S002.md) first review completed — decision log adopted; governance drift trend moved to *improving*.
+* **Creation**: Added knowledge concepts [DACI Decision Framework](/knowledge/daci-framework.md) and [Steering Decision Log](/knowledge/decision-log.md).
+
+## 2026-03-11
+* **Creation**: [dec-S002](/decisions/dec-S002.md) enacted (mandatory decision log for all steering decisions).
+
+## 2026-02-12
+* **Creation**: [dec-S001](/decisions/dec-S001.md) enacted (analytics platform migration budget, 45k EUR).
+
+## 2025-11-01
+* **Update**: Governance drift detected on [governance.framework](/drift/governance-framework.md) — DACI defined but reprioritizations bypass contributor review.
