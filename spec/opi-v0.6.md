@@ -100,6 +100,8 @@ The export generates the two OKF reserved files:
 
 - **`index.md`** at the bundle root and in each subdirectory. The bundle-root `index.md` carries the only permitted frontmatter — `okf_version: "0.1"` — and lists sections of entries:
 
+  > **Note on the OKF spec itself:** OKF v0.1 §6 states that index files "contain no frontmatter", while §11 introduces the bundle-root `okf_version` frontmatter as the single exception. OPI follows §11: frontmatter on the root `index.md` only, never on subdirectory indexes. Validator implementers should not trip over §6 read in isolation.
+
   ```markdown
   # Organization: Product Organization
 
@@ -119,7 +121,9 @@ The export generates the two OKF reserved files:
 
 > **An OPI OKF export MUST be a conformant OKF v0.1 bundle.** That is: every non-reserved `.md` file contains a parseable YAML frontmatter block with a non-empty `type`; the reserved files `index.md` and `log.md` follow OKF structure; and the bundle-root `index.md` declares `okf_version: "0.1"`.
 
-This makes the export consumable by *any* OKF reader (Google's static visualizer, an LLM agent, another OPI instance) with no OPI-specific tooling.
+This makes the export consumable by *any* OKF reader (the reference tooling in Google's `knowledge-catalog` repository — which now ships sample bundles and a reference enrichment agent alongside the static visualizer —, an LLM agent, another OPI instance) with no OPI-specific tooling.
+
+**Beware the stray `.md`:** OKF reserves *only* `index.md` and `log.md`. Any other Markdown file in the bundle — a `README.md`, a `NOTES.md` — is a concept document and MUST carry frontmatter with a non-empty `type`, or the bundle as a whole is non-conformant. The exporter therefore MUST NOT emit auxiliary frontmatter-less `.md` files into the bundle (see Rule 73).
 
 ### 1.6 Body Convention
 
@@ -333,9 +337,9 @@ Rules continue numbering from v0.5 (last rule: 71). Rules 72–75 cover Export; 
 
 #### Rule 73: Export Bundle Must Be OKF-Conformant
 
-**Assertion:** A generated OKF export MUST be a conformant OKF v0.1 bundle: every non-reserved `.md` file has a parseable YAML frontmatter block with a non-empty `type`, and the bundle-root `index.md` declares `okf_version: "0.1"`.
+**Assertion:** A generated OKF export MUST be a conformant OKF v0.1 bundle: every non-reserved `.md` file has a parseable YAML frontmatter block with a non-empty `type`, and the bundle-root `index.md` declares `okf_version: "0.1"`. This includes auxiliary files: the exporter MUST NOT place frontmatter-less `.md` files (e.g. a `README.md`) into the bundle — OKF reserves only `index.md` and `log.md`, so every other `.md` is a concept document.
 
-**Rationale:** The whole point of the export is consumption by any OKF reader. A non-conformant bundle defeats the feature.
+**Rationale:** The whole point of the export is consumption by any OKF reader. A non-conformant bundle defeats the feature — and the easiest way to produce one accidentally is a harmless-looking documentation file without `type` frontmatter.
 
 **Level:** ERROR
 
