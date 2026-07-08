@@ -1,0 +1,48 @@
+# Validate OPI documents on every push and pull request.
+#
+# ── Adapting this for YOUR org repo (copy-paste guide) ────────────────────────
+# 1. Copy this file to .github/workflows/validate.yml in your repository.
+# 2. Copy tools/validate.py into your repository (same relative path).
+#    Optional but recommended: also copy the spec/opi-v*.schema.json files —
+#    the validator picks the schema matching each document's `opi:` version
+#    automatically. Without spec/, you still get the structural core checks.
+# 3. Point the FILES list below at your own YAML documents, e.g. just:
+#        FILES: org.yaml
+# 4. In GitHub, protect your main branch (Settings → Branches → Add rule) and
+#    mark this check as required — red validation then blocks the merge button.
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: Validate OPI documents
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      # The documents to validate, one per line.
+      # NOTE: examples/pilot-starter/invalid-example.yaml is deliberately
+      # broken (a teaching aid) and therefore NOT listed here.
+      FILES: |
+        examples/governance/steering-committee.yaml
+        examples/governance/delivery-lead-sync.yaml
+        examples/pilot-starter/org.yaml
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # PyYAML is required; jsonschema unlocks full JSON Schema validation
+      # (without it the validator falls back to structural core checks).
+      - name: Install validator dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: Validate
+        run: |
+          # shellcheck disable=SC2086 — FILES is a newline-separated list
+          python3 tools/validate.py $FILES
