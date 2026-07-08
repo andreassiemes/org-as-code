@@ -1,0 +1,16 @@
+# Role template — one entry for the components.roles catalog in org.yaml.
+# Copy the block below UNDER `components.roles:` and replace every <placeholder>.
+# The key (<role-id>) is what teams reference via `role_ref` — lowercase, hyphens only.
+
+<role-id>:                         # e.g. platform-engineer — must match ^[a-z0-9][a-z0-9-]*$
+  title: "<Role Title>"            # human-readable, e.g. "Platform Engineer"   (required)
+  level: <level>                   # junior | mid | senior | lead | principal | executive
+  purpose: "<One sentence: why does this role exist?>"                        # (required)
+  accountabilities:                # 2-5 things this role OWNS (not tasks)     (required)
+    - <accountability-one>         # e.g. own-team-backlog
+    - <accountability-two>
+  # Optional extras:
+  # reports_to: <role-id-or-unit>  # reference to parent role or unit
+  # skills:
+  #   required: [<skill>, <skill>]
+  #   preferred: [<skill>]

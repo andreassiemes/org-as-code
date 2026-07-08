@@ -1,0 +1,19 @@
+# Decision template — one entry for the `decisions:` list in org.yaml.
+# Copy the block below INTO the `decisions:` list and replace every <placeholder>.
+# The decision log is append-only: never edit past decisions, supersede them
+# (new record with `revises: <old-id>`, old record gets `status: superseded`).
+
+- id: dec-<nnn>                    # next free number, lowercase, e.g. dec-003 (required)
+  date: <YYYY-MM-DD>               # ISO date the decision was made            (required)
+  gremium: <gremium-id>            # which committee decided — must exist in gremien[] (required)
+  title: "<One full sentence describing what was decided>"   # min 10 chars    (required)
+  driver: <role-id>                # who drove the proposal                    (required)
+  approver: <role-id>              # who approved it                           (required)
+  status: <status>                 # active | planned | revoked | superseded   (required)
+  rationale: |                     # WHY — the part your future self will thank you for
+    <2-4 sentences: what problem existed, why this option won.>   # min 20 chars (required)
+  # Optional extras:
+  # scope: "<which teams/areas are affected>"
+  # review_date: <YYYY-MM-DD>      # when to re-examine this decision
+  # triggers: [dec-<nnn>]          # earlier decision(s) that led to this one
+  # revises: dec-<nnn>             # the decision this one supersedes

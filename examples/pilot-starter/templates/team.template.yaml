@@ -1,0 +1,19 @@
+# Team template — one entry for the `units:` list in org.yaml.
+# Copy the block below INTO the `units:` list and replace every <placeholder>.
+# Rule: roles only, NO person names (see README.md, step 1).
+
+- id: team-<name>                  # lowercase, hyphens only, e.g. team-payments
+  name: "Team <Name>"              # human-readable display name              (required)
+  type: <type>                     # stream-aligned (customer-facing work) | platform
+                                   # (services for other teams) | enabling (coaching)
+  parent: <tribe-id>               # the unit.id of your pilot tribe
+  purpose: "<One sentence: what is this team's mission?>"
+  members:                         # every role_ref must exist in components.roles
+    - role_ref: <role-id>
+    - role_ref: <role-id>
+      count: 2                     # optional: number of people in this role
+  # Optional extras:
+  # dependencies:
+  #   - unit: <other-team-id>
+  #     type: x-as-a-service       # collaboration | x-as-a-service | facilitating | blocking
+  #     description: "<what you depend on>"

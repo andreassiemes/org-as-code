@@ -1,0 +1,38 @@
+# INTENTIONALLY BROKEN — do NOT copy this file.
+#
+# This is what a failing validation looks like. Run:
+#   python3 tools/validate.py examples/pilot-starter/invalid-example.yaml
+# and compare the ✗ lines with the "BUG:" comments below. Use it to learn
+# how to read a red check before your first real one (see CONTRIBUTING.md).
+#
+# It is excluded from the CI file list in .github/workflows/validate.yml.
+
+opi: "0.6.0"
+
+unit:
+  # BUG 1: `name` is missing — every OPI document needs a named root unit.
+  id: Broken_Tribe        # BUG 2: uppercase + underscore violate the id pattern ^[a-z0-9][a-z0-9-]*$
+  type: stream-aligned
+  members:
+    - role_ref: product-manager   # BUG 3: dangling reference — components.roles below has no 'product-manager'
+
+components:
+  roles:
+    product-lead:
+      title: "Product Lead"
+      purpose: "Owns product strategy"
+      # BUG 4: required field `accountabilities` is missing.
+
+gremien:
+  - id: tribe-council
+    name: "Tribe Council"
+
+decisions:
+  - id: dec-001
+    date: "2026-13-45"            # BUG 5: not a real ISO date (month 13, day 45)
+    gremium: portfolio-board      # BUG 6: dangling reference — no such gremium in gremien[]
+    title: "Too short"            # BUG 7: title must be a full sentence (min 10 chars — this one barely misses semantics, schema wants >=10)
+    driver: product-lead
+    approver: product-lead
+    status: decided               # BUG 8: invalid status — must be active | planned | revoked | superseded
+    # BUG 9: required field `rationale` is missing.

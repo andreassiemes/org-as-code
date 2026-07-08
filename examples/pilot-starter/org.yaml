@@ -1,0 +1,156 @@
+# Pilot Starter — a fictional product organization as an OPI v0.6 document.
+#
+# This is a SKELETON: copy it, replace the placeholder names, delete what you
+# don't need. Every section carries a one-line comment saying what it is and
+# why it exists. Validate with:  python3 tools/validate.py examples/pilot-starter/org.yaml
+#
+# Deliberately role-based: NO person names, NO personal data (see README.md,
+# step 1 — keep PII out of the repo; map people to roles in your HR system).
+
+# Which version of the OPI spec this document conforms to.
+opi: "0.6.0"
+
+# org: who this document belongs to — the umbrella above your pilot unit.
+org:
+  id: acme-product-org
+  name: "Acme Product Organization"
+  purpose: "Builds and runs the Acme product portfolio"
+
+# components: reusable definitions (roles here) referenced elsewhere via role_ref.
+components:
+  # roles: your role catalog — define each role ONCE, reference it in every team.
+  roles:
+    product-lead:
+      title: "Product Lead"
+      level: lead
+      purpose: "Owns product strategy and outcomes for the tribe"
+      accountabilities:
+        - set-product-strategy
+        - prioritize-tribe-roadmap
+        - represent-tribe-to-leadership
+    product-manager:
+      title: "Product Manager"
+      level: senior
+      purpose: "Owns discovery and delivery outcomes for one team"
+      accountabilities:
+        - own-team-backlog
+        - validate-customer-problems
+        - define-success-metrics
+    tech-lead:
+      title: "Tech Lead"
+      level: lead
+      purpose: "Owns technical direction and delivery quality of one team"
+      accountabilities:
+        - own-technical-decisions
+        - guard-architecture-fit
+        - coach-engineering-practices
+    product-designer:
+      title: "Product Designer"
+      level: senior
+      purpose: "Owns user experience and design quality"
+      accountabilities:
+        - design-user-journeys
+        - run-usability-tests
+    product-analyst:
+      title: "Product Analyst"
+      level: mid
+      purpose: "Turns product data into decisions"
+      accountabilities:
+        - maintain-product-metrics
+        - deliver-decision-ready-analyses
+
+# unit: the root of this document — your ONE pilot area (here: a tribe).
+unit:
+  id: checkout-tribe
+  name: "Checkout Tribe"
+  type: stream-aligned
+  purpose: "End-to-end ownership of the purchase experience"
+  mandate: "Roadmap, staffing proposals, and product decisions for the checkout domain"
+  owner: product-lead          # accountable ROLE, not a person
+  version: "2026-Q3"           # structural version — bump on reorganizations
+  members:
+    - role_ref: product-lead
+  knowledge_refs:
+    - tribe-operating-notes
+
+# units: the teams inside the pilot tribe. Small pilots keep them inline;
+# once a team grows its own governance, graduate it into its own file.
+units:
+  - id: team-payments
+    name: "Team Payments"
+    type: stream-aligned
+    parent: checkout-tribe
+    purpose: "Payment methods and transaction reliability"
+    members:
+      - role_ref: product-manager
+      - role_ref: tech-lead
+      - role_ref: product-analyst
+  - id: team-cart
+    name: "Team Cart"
+    type: stream-aligned
+    parent: checkout-tribe
+    purpose: "Cart, pricing display, and promotions"
+    members:
+      - role_ref: product-manager
+      - role_ref: tech-lead
+      - role_ref: product-designer
+  - id: team-checkout-platform
+    name: "Team Checkout Platform"
+    type: platform
+    parent: checkout-tribe
+    purpose: "Shared checkout services and internal tooling for the other teams"
+    members:
+      - role_ref: product-manager
+      - role_ref: tech-lead
+
+# gremien: the committees that OWN decisions — every decision below points here.
+gremien:
+  - id: tribe-council
+    name: "Tribe Council"
+    purpose: "Cross-team decisions inside the tribe: roadmap trade-offs, staffing proposals, technical direction"
+    mandate: "Decides everything that affects more than one team; escalates budget beyond tribe scope to the portfolio board"
+    cadence: biweekly
+    members: [product-lead, product-manager, tech-lead]
+
+# decisions: the decision log — one record per decision, append-only history.
+decisions:
+  - id: dec-001
+    date: 2026-06-15
+    gremium: tribe-council
+    title: "Adopt a shared payment-provider abstraction for all teams"
+    driver: tech-lead
+    approver: product-lead
+    status: active
+    rationale: |
+      Two teams integrated the same payment provider separately, duplicating
+      effort and creating inconsistent error handling. A shared abstraction
+      owned by the platform team removes the duplication.
+    scope: "team-payments, team-checkout-platform"
+    review_date: 2026-12-01
+  - id: dec-002
+    date: 2026-06-29
+    gremium: tribe-council
+    title: "Run discovery before building the promotions engine"
+    driver: product-manager
+    approver: product-lead
+    status: planned
+    triggers: [dec-001]        # decision graph: dec-001 led to this one
+    rationale: |
+      The promotions backlog is based on stakeholder requests, not validated
+      customer problems. A four-week discovery phase de-risks the largest
+      planned investment of the quarter.
+    scope: "team-cart"
+    review_date: 2026-09-01
+
+# knowledge: typed knowledge that lives BESIDE the structure (v0.6) — playbooks,
+# definitions, references. Linked from units/decisions via knowledge_refs.
+knowledge:
+  - id: tribe-operating-notes
+    type: Playbook
+    title: "Tribe Operating Notes"
+    description: "How the Checkout Tribe runs: cadences, decision rules, escalation path."
+    tags: [operating-model, governance]
+    relates_to:
+      - checkout-tribe
+      - tribe-council
+    timestamp: 2026-06-15T09:00:00Z
