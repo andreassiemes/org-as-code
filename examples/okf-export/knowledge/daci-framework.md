@@ -12,7 +12,7 @@ x-opi-id: daci-framework
 Decision-making framework assigning Driver, Approver, Contributor, and Informed roles to
 every steering decision. Adopted by the [Delivery Organization](/units/delivery.md) and
 the [Steering Committee](/gremien/steering-committee.md); made auditable by
-[dec-S002](/decisions/dec-S002.md).
+[dec-s002](/decisions/dec-s002.md).
 
 # Examples
 

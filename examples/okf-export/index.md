@@ -22,8 +22,8 @@ okf_version: "0.1"
 
 ## Decisions
 
-* [Approve analytics platform migration budget (45k EUR)](/decisions/dec-S001.md) - active, steering-committee.
-* [Introduce a mandatory decision log for all steering decisions](/decisions/dec-S002.md) - active, steering-committee.
+* [Approve analytics platform migration budget (45k EUR)](/decisions/dec-s001.md) - active, steering-committee.
+* [Introduce a mandatory decision log for all steering decisions](/decisions/dec-s002.md) - active, steering-committee.
 
 ## Agents
 

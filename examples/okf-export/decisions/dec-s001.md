@@ -4,7 +4,7 @@ title: Approve analytics platform migration budget (45k EUR)
 description: Migration of the legacy analytics platform to remove recurring data-quality incidents and unblock the monthly delivery report.
 tags: [budget-allocation, decision]
 timestamp: 2026-07-04T09:00:00Z
-x-opi-id: dec-S001
+x-opi-id: dec-s001
 x-opi-status: active
 x-opi-date: 2026-02-12
 x-opi-driver: head-of-delivery
@@ -32,7 +32,7 @@ source of interface drift toward the executive team.
 # Schema (source fragment)
 
 ```yaml
-id: dec-S001
+id: dec-s001
 date: 2026-02-12
 gremium: steering-committee
 status: active

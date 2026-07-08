@@ -12,8 +12,8 @@ x-opi-id: decision-log
 
 Canonical log of all [Steering Committee](/gremien/steering-committee.md) decisions, one
 record per decision, linked from meeting minutes. Mandated by
-[dec-S002](/decisions/dec-S002.md); first populated with
-[dec-S001](/decisions/dec-S001.md). Queried read-only by the
+[dec-s002](/decisions/dec-s002.md); first populated with
+[dec-s001](/decisions/dec-s001.md). Queried read-only by the
 [Governance Advisor Agent](/agents/governance-advisor.md).
 
 # Citations

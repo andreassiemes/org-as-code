@@ -11,8 +11,8 @@ x-opi-level: senior
 # Role: Head of Delivery
 
 Drives decision proposals into the [Steering Committee](/gremien/steering-committee.md)
-and reports delivery metrics. Driver for [dec-S001](/decisions/dec-S001.md) and
-[dec-S002](/decisions/dec-S002.md); first escalation target of the
+and reports delivery metrics. Driver for [dec-s001](/decisions/dec-s001.md) and
+[dec-s002](/decisions/dec-s002.md); first escalation target of the
 [Governance Advisor Agent](/agents/governance-advisor.md).
 
 **Accountabilities:**

@@ -4,7 +4,7 @@ title: Introduce a mandatory decision log for all steering decisions
 description: A mandatory decision log makes the DACI framework auditable and closes the observed governance drift.
 tags: [governance, decision]
 timestamp: 2026-07-04T09:00:00Z
-x-opi-id: dec-S002
+x-opi-id: dec-s002
 x-opi-status: active
 x-opi-date: 2026-03-11
 x-opi-driver: head-of-delivery
@@ -35,7 +35,7 @@ see [log](/log.md) — satisfies the freshness rule, OPI Rule 80).
 # Schema (source fragment)
 
 ```yaml
-id: dec-S002
+id: dec-s002
 date: 2026-03-11
 gremium: steering-committee
 status: active

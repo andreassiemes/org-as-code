@@ -20,8 +20,8 @@ proposals are driven by the [Head of Delivery](/roles/head-of-delivery.md). Fed 
 
 # Decisions
 
-* [Approve analytics platform migration budget (45k EUR)](/decisions/dec-S001.md)
-* [Introduce a mandatory decision log for all steering decisions](/decisions/dec-S002.md)
+* [Approve analytics platform migration budget (45k EUR)](/decisions/dec-s001.md)
+* [Introduce a mandatory decision log for all steering decisions](/decisions/dec-s002.md)
 
 # Schema (source fragment)
 

@@ -18,7 +18,7 @@ x-opi-since: 2025-11-01
 
 **Severity:** warning. **Trend:** improving (since 2025-11-01).
 
-Decision log mandated by [dec-S002](/decisions/dec-S002.md) (2026-03-11); first review
+Decision log mandated by [dec-s002](/decisions/dec-s002.md) (2026-03-11); first review
 completed 2026-06-10. Affects the [Steering Committee](/gremien/steering-committee.md)
 and the [Delivery Organization](/units/delivery.md).
 
@@ -32,5 +32,5 @@ delta: "Framework not followed in practice"
 severity: warning
 since: 2025-11-01
 trend: improving
-note: "Decision log mandated by dec-S002 (2026-03-11); first review completed 2026-06-10."
+note: "Decision log mandated by dec-s002 (2026-03-11); first review completed 2026-06-10."
 ```

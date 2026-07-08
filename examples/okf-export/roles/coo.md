@@ -12,7 +12,7 @@ x-opi-level: executive
 
 Chairs the [Steering Committee](/gremien/steering-committee.md); final decision
 authority for delivery-organization matters. Approver for
-[dec-S001](/decisions/dec-S001.md) and [dec-S002](/decisions/dec-S002.md).
+[dec-s001](/decisions/dec-s001.md) and [dec-s002](/decisions/dec-s002.md).
 
 **Accountabilities:**
 

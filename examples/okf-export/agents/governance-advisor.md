@@ -36,7 +36,7 @@ scope:
   gremien: [steering-committee]
   decision_types: [budget-allocation, governance]
 schedule:
-  cadence: biweekly
+  cadence: weekly
   condition: "48h before each Steering Committee"
 escalation_path:
   - head-of-delivery

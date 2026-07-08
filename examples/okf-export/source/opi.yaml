@@ -35,6 +35,16 @@ components:
       capabilities:
         - "Read decisions and drift from the OPI document set"
         - "Prepare pre-read summaries for the Steering Committee"
+      constraints:
+        - "Cannot modify decisions, drift records, or any other OPI data — strictly read-only"
+        - "Cannot approve or reject decisions — only prepares analysis for human review"
+        - "Must flag stale decisions (review_date passed) to head-of-delivery before each Steering Committee"
+      governance:
+        may_read: true
+        may_write: true           # Creates pre-read summaries (artifacts), never modifies OPI files
+        may_decide: false
+        audit_trail: git
+      owner: head-of-delivery
 
 unit:
   id: delivery
@@ -69,7 +79,7 @@ gremien:
     members: [head-of-delivery, delivery-leads]
 
 decisions:
-  - id: dec-S001
+  - id: dec-s001
     date: 2026-02-12
     gremium: steering-committee
     title: "Approve analytics platform migration budget (45k EUR)"
@@ -85,7 +95,7 @@ decisions:
     review_date: 2026-08-01
     knowledge_refs:
       - decision-log
-  - id: dec-S002
+  - id: dec-s002
     date: 2026-03-11
     gremium: steering-committee
     title: "Introduce a mandatory decision log for all steering decisions"
@@ -112,7 +122,7 @@ agents:
       gremien: [steering-committee]
       decision_types: [budget-allocation, governance]
     schedule:
-      cadence: biweekly
+      cadence: weekly
       condition: "48h before each Steering Committee"
     escalation_path:
       - head-of-delivery
@@ -127,7 +137,7 @@ status:
       severity: warning
       since: 2025-11-01
       trend: improving
-      note: "Decision log mandated by dec-S002 (2026-03-11); first review completed 2026-06-10."
+      note: "Decision log mandated by dec-s002 (2026-03-11); first review completed 2026-06-10."
 
 knowledge:
   - id: daci-framework
@@ -138,7 +148,7 @@ knowledge:
     relates_to:
       - delivery
       - steering-committee
-      - dec-S002
+      - dec-s002
     body: |
       # Examples
       For a budget decision >10k EUR: the Head of Delivery *drives* the proposal, the COO
@@ -157,6 +167,6 @@ knowledge:
     tags: [governance, provenance]
     relates_to:
       - steering-committee
-      - dec-S001
-      - dec-S002
+      - dec-s001
+      - dec-s002
     timestamp: 2026-06-10T12:00:00Z
