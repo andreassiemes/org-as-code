@@ -47,6 +47,11 @@ VERSION_PATTERN = re.compile(r"^\d+\.\d+(\.\d+)?$")
 
 DECISION_REQUIRED = ["id", "date", "gremium", "title", "driver", "approver", "status", "rationale"]
 DECISION_STATUS_ENUM = {"active", "planned", "revoked", "superseded"}
+# v0.7 draft additions (spec/opi-v0.7-draft.md)
+DECISION_STATUS_ENUM_V07 = DECISION_STATUS_ENUM | {"hypothesis"}
+DECISION_TYPE_ENUM = {"two-way", "one-way", "big-bet", "delegated"}
+VISIBILITY_ENUM = {"public", "internal", "restricted", "confidential"}
+REOPEN_ENTRY = re.compile(r"^\d{4}-\d{2}-\d{2}\s*[—-]\s*\S.*")
 ROLE_REQUIRED = ["title", "purpose", "accountabilities"]
 
 MAX_SCHEMA_ERRORS = 10  # keep the report readable on badly broken files
@@ -150,6 +155,7 @@ def check_structure(report: Report, doc: dict) -> None:
         report.ok(f"opi version declared ({version})")
     else:
         report.fail(f"opi: missing or not a semver string (got {version!r})", needle="opi")
+    v07 = isinstance(version, str) and version.startswith("0.7")
 
     # -- unit identity
     unit = as_dict(doc.get("unit"))
@@ -253,9 +259,30 @@ def check_structure(report: Report, doc: dict) -> None:
             dfail(f"{label}: date '{date}' is not a valid ISO 8601 date (YYYY-MM-DD)",
                   needle=str(date))
         status = d.get("status")
-        if status is not None and status not in DECISION_STATUS_ENUM:
-            dfail(f"{label}: status '{status}' not in {sorted(DECISION_STATUS_ENUM)}",
+        allowed = DECISION_STATUS_ENUM_V07 if v07 else DECISION_STATUS_ENUM
+        if status is not None and status not in allowed:
+            hint = " ('hypothesis' requires opi >= 0.7)" if status == "hypothesis" and not v07 else ""
+            dfail(f"{label}: status '{status}' not in {sorted(allowed)}{hint}",
                   needle=str(status))
+        # -- v0.7 lifecycle checks (run whenever the fields are present)
+        if d.get("decision_type") and d["decision_type"] not in DECISION_TYPE_ENUM:  # Rule 90
+            dfail(f"{label}: decision_type '{d['decision_type']}' not in {sorted(DECISION_TYPE_ENUM)}",
+                  needle=str(d["decision_type"]))
+        if d.get("decision_type") in ("one-way", "big-bet") and not d.get("rationale"):  # Rule 90 WARN
+            report.note(f"⚠ {label}: {d['decision_type']} decision without rationale (Rule 90)")
+        if status == "hypothesis" and (not d.get("validate") or not d.get("validate_by")):  # Rule 91
+            dfail(f"{label}: hypothesis without validate + validate_by (Rule 91)",
+                  needle=str(d.get("id") or ""))
+        for entry in as_list(d.get("reopen_log")):  # Rule 92 (format)
+            if not REOPEN_ENTRY.match(str(entry)):
+                dfail(f"{label}: reopen_log entry not 'YYYY-MM-DD — reason' (Rule 92): {entry!r}",
+                      needle=str(entry)[:30])
+        vis = d.get("visibility")
+        if vis is not None and vis not in VISIBILITY_ENUM:  # Rule 87
+            dfail(f"{label}: visibility '{vis}' not in {sorted(VISIBILITY_ENUM)}", needle=str(vis))
+        if vis in ("restricted", "confidential") and not d.get("classification_reason"):  # Rule 88
+            dfail(f"{label}: visibility '{vis}' requires classification_reason (Rule 88)",
+                  needle=str(d.get("id") or ""))
         if d.get("gremium") and gremien and d["gremium"] not in gremium_ids:
             dfail(f"{label}: gremium '{d['gremium']}' not found in gremien[]",
                   needle=str(d["gremium"]))
@@ -263,7 +290,7 @@ def check_structure(report: Report, doc: dict) -> None:
     for i, d in enumerate(decisions):
         d = as_dict(d)
         label = f"decisions[{i}] '{d.get('id', '?')}'"
-        for field in ("triggers", "consequences"):
+        for field in ("triggers", "consequences", "conflicts_with", "supersedes", "superseded_by"):
             for ref in as_list(d.get(field)):
                 if ref not in decision_ids:
                     dfail(f"{label}: {field} references unknown decision '{ref}'",

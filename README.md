@@ -174,6 +174,8 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 ## Status
 
+**V0.7** (public draft — [discussion open](../../discussions)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), and the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)). Validation Rules 87–98. Backward-compatible with V0.6.
+
 **V0.6** (draft) — OKF Interoperability & Knowledge Graph: lossless OKF export, first-class `knowledge[]` entity, OKF round-trip import, native `log.md` provenance, permissive consumer model. Validation Rules 72–86. Backward-compatible with V0.5.
 
 **V0.5** (draft) — Decision Graph, Agent Context API, MCP integration, `orgspec` CLI. 9 new rules (R63–R71). Backward-compatible with V0.4.

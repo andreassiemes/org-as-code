@@ -1,0 +1,125 @@
+# serve-demo — a fictional organization exercising `orgspec serve`
+# (Serving Profile, spec/opi-v0.7-draft.md §4). Fictitious "Meridian Works" org;
+# includes v0.7 lifecycle fields so the composite tools have something to traverse.
+#
+#   orgspec serve examples/serve-demo --watch
+
+opi: "0.7.0"
+
+org:
+  id: meridian-works
+  name: "Meridian Works"
+  purpose: "Fictitious demo organization for the OPI Serving Profile"
+
+unit:
+  id: meridian-platform-org
+  name: "Meridian Platform Organization"
+  type: tribe
+  purpose: "Root unit of the demo: the platform tribe and its product teams"
+
+units:
+  - id: platform
+    name: "Platform"
+    type: team
+    purpose: "Runs the shared runtime, data stores, and CI for all product teams"
+    members:
+      - role: tech-lead
+        count: 1
+      - role: platform-engineer
+        count: 4
+  - id: payments
+    name: "Payments"
+    type: team
+    parent: platform
+    purpose: "Owns the payment-provider abstraction and checkout flows"
+  - id: product-api
+    name: "Product API"
+    type: team
+    parent: platform
+    purpose: "Public API surface, versioning, and developer experience"
+
+gremien:
+  - id: platform-council
+    name: "Platform Council"
+    purpose: "Cross-team technical decisions: architecture, access management, shared tooling"
+    cadence: biweekly
+    members: [tech-lead, product-lead, platform-engineer]
+  - id: exec-board
+    name: "Executive Board"
+    purpose: "Program-level decisions: pricing, budget, organizational structure"
+    cadence: monthly
+    members: [ceo, coo, product-lead]
+
+decisions:
+  - id: dec-001
+    date: 2026-05-12
+    title: "One shared Postgres cluster serves all services until 50k daily active users"
+    status: active
+    decision_type: two-way
+    gremium: platform-council
+    driver: tech-lead
+    approver: tech-lead
+    scope: cross-team
+    rationale: "Lowest ops burden at current headcount; migration paths are well understood"
+    review_date: 2026-11-01
+  - id: dec-002
+    date: 2026-04-02
+    title: "Access management: every service authenticates via the shared identity broker"
+    status: active
+    decision_type: one-way
+    gremium: platform-council
+    driver: platform-engineer
+    approver: tech-lead
+    scope: cross-team
+    rationale: "Per-service auth sprawl was the root cause of two audit findings"
+    conditions: "Broker uptime SLO of 99.9% must hold for two consecutive quarters"
+    dissent:
+      - "payments lead: broker is a single point of failure for checkout; revisit at Q4"
+  - id: dec-003
+    date: 2026-06-20
+    title: "Usage-based pricing for the public API"
+    status: hypothesis   # v0.7: provisional decision with an explicit test (§2.2, Rule 91)
+    decision_type: big-bet
+    gremium: exec-board
+    driver: product-lead
+    approver: exec-board
+    scope: program
+    rationale: "Seat pricing stalled two enterprise deals; usage aligns price with value"
+    validate: "3 design partners convert AND billing tickets stay under 5/month"
+    validate_by: 2026-09-30
+    conflicts_with: [dec-004]
+  - id: dec-004
+    date: 2026-02-10
+    title: "Seat-based pricing at general availability"
+    status: superseded
+    decision_type: two-way
+    gremium: exec-board
+    driver: product-lead
+    approver: exec-board
+    scope: program
+    rationale: "Predictable revenue was the original argument; falsified by deal evidence"
+    reopen_log:
+      - "2026-06-03 — two enterprise deals stalled where usage concentrated in few power users"
+  - id: dec-005
+    date: 2026-06-25
+    title: "Payments team may ship provider changes without council review below 1000 EUR impact"
+    status: active
+    decision_type: delegated
+    gremium: platform-council
+    driver: tech-lead
+    approver: platform-council
+    scope: team
+    rationale: "Council review below 1000 EUR impact cost more than the risk it prevented"
+    revises: dec-002
+
+agents:
+  - ref: support-triage-agent
+    scope:
+      units: [payments]
+      data: [tickets, order-state]
+      note: "May propose refunds up to 100 EUR; never executes them"
+    schedule: continuous
+    escalation_path: [payments, platform-council]
+    context_endpoint:
+      format: mcp
+      include_decisions: true
