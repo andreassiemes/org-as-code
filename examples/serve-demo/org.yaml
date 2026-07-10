@@ -14,13 +14,13 @@ org:
 unit:
   id: meridian-platform-org
   name: "Meridian Platform Organization"
-  type: tribe
+  type: platform
   purpose: "Root unit of the demo: the platform tribe and its product teams"
 
 units:
   - id: platform
     name: "Platform"
-    type: team
+    type: stream-aligned
     purpose: "Runs the shared runtime, data stores, and CI for all product teams"
     members:
       - role: tech-lead
@@ -29,12 +29,12 @@ units:
         count: 4
   - id: payments
     name: "Payments"
-    type: team
+    type: stream-aligned
     parent: platform
     purpose: "Owns the payment-provider abstraction and checkout flows"
   - id: product-api
     name: "Product API"
-    type: team
+    type: stream-aligned
     parent: platform
     purpose: "Public API surface, versioning, and developer experience"
 
@@ -118,7 +118,8 @@ agents:
       units: [payments]
       data: [tickets, order-state]
       note: "May propose refunds up to 100 EUR; never executes them"
-    schedule: continuous
+    schedule:
+      cadence: on-demand
     escalation_path: [payments, platform-council]
     context_endpoint:
       format: mcp
