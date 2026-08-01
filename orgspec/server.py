@@ -8,7 +8,8 @@ plain-JSON responses) with the Serving Profile's enforcement rules:
 * read-only by design (§4.5) — the write path is the repository's change process
 * `--watch`: mtime check per request; a merged PR is visible on the next call
 
-MVP scope: ONE key without tiers (tier enforcement lands with the v0.7 schema).
+One key, one tier ceiling (--ceiling). Everything above it is redacted or
+omitted on the way out — see tools.enforce_tier.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import __version__
 from .loader import LoadError, load
-from .tools import Catalog
+from .tools import Catalog, TIER_ORDER
 
 PROTOCOL_VERSION = "2025-03-26"
 
@@ -28,18 +29,18 @@ PROTOCOL_VERSION = "2025-03-26"
 class _State:
     """Model + catalog with watch-aware reload."""
 
-    def __init__(self, root: str, watch: bool):
-        self.root, self.watch = root, watch
+    def __init__(self, root: str, watch: bool, ceiling: str = "internal"):
+        self.root, self.watch, self.ceiling = root, watch, ceiling
         self._lock = threading.Lock()
         self.model = load(root)
-        self.catalog = Catalog(self.model)
+        self.catalog = Catalog(self.model, ceiling)
 
     def fresh_catalog(self) -> Catalog:
         with self._lock:
             if self.watch and self.model.stale():
                 try:
                     self.model = load(self.root)
-                    self.catalog = Catalog(self.model)
+                    self.catalog = Catalog(self.model, self.ceiling)
                     print(f"[watch] reloaded: {self.model.counts()}")
                 except LoadError as exc:
                     # keep serving the last good state; a broken tree never 500s the agent
@@ -138,8 +139,11 @@ def _rpc_error(mid, code, message):
 
 
 def serve(root: str, host: str = "127.0.0.1", port: int = 8484,
-          key: str | None = None, watch: bool = False) -> None:
-    state = _State(root, watch)
+          key: str | None = None, watch: bool = False,
+          ceiling: str = "internal") -> None:
+    if ceiling not in TIER_ORDER:
+        raise SystemExit(f"--ceiling must be one of {', '.join(TIER_ORDER)} (got {ceiling!r})")
+    state = _State(root, watch, ceiling)
     api_key = key or secrets.token_urlsafe(24)
     httpd = ThreadingHTTPServer((host, port), _handler(state, api_key))
     counts = ", ".join(f"{v} {k}" for k, v in state.model.counts().items())
@@ -147,6 +151,7 @@ def serve(root: str, host: str = "127.0.0.1", port: int = 8484,
     print(f"  repo:   {state.model.root}  ({counts})")
     print(f"  tools:  {len(state.catalog.tools)} generated")
     print(f"  mcp:    http://{host}:{port}/mcp   (X-API-Key required)")
+    print(f"  tier:   {ceiling} — entities above this tier are redacted or omitted (spec §1.1)")
     if key is None:
         print(f"  key:    {api_key}   (generated — pass --key to pin one)")
     print(f"  watch:  {'on — merged changes are visible on the next call' if watch else 'off'}")

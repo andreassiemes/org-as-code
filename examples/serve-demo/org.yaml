@@ -122,6 +122,21 @@ decisions:
     scope: cross-team
     rationale: "Undocumented decisions were re-litigated across teams; a shared record keeps the org auditable"
     conditions: "Decisions must land in the org repository within 30 days of being taken"
+  # Tier demonstration (§1.1): served below `restricted`, this decision appears as a
+  # redacted card — id, date and tier only. `orgspec serve --ceiling restricted` shows
+  # it in full. Its existence stays visible either way, so graph topology stays honest.
+  - id: dec-007
+    date: 2026-07-22
+    title: "Consolidate the two payment squads"
+    visibility: restricted
+    classification_reason: "restructuring — personnel impact before announcement"
+    status: active
+    decision_type: one-way
+    gremium: exec-board
+    driver: coo
+    approver: exec-board
+    scope: cross-team
+    rationale: "Two squads maintained overlapping refund paths; one owner removes the ambiguity"
 
 agents:
   - ref: support-triage-agent

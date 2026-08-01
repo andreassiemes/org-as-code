@@ -1,6 +1,6 @@
 # OPI Specification v0.7 (Addendum)
 
-**Status:** STABLE — tagged `v0.7.0`. Under the project's stability policy
+**Status:** STABLE — tagged `v0.7.1`. Under the project's stability policy
 ([VERSIONING.md](../VERSIONING.md)) the spec text, schema, and validation rules of this
 minor version do not change anymore; fixes ship as PATCH and never alter semantics. The
 version was published as a public draft on 2026-07-09 and stabilized after implementation
@@ -44,6 +44,15 @@ OPI v0.7 makes decisions *live* and organizations *servable*. It introduces six 
 it to the *agent runtime*: an OPI repository remains the strict, versioned source of
 truth — the Serving Profile defines how that truth is exposed to agents at scale without
 ever leaving the repository's governance (PRs, history, drift detection).
+
+## Maturity
+
+| ✅ Normative and implemented | 🚧 Specified, implementation pending | ❌ Specified but unimplementable |
+|---|---|---|
+| Entity-level visibility tiers (rules 87–88, all entity types) · decision lifecycle (rules 90–93) · `ai:` block (rule 94) · Access Enforcement (§4.4, `--ceiling`) · agent mandate provenance (rules 99–100) | Serving Profile composite tools — SHOULD in v0.7, MUST from v1.0 (rules 95–98) | Field-level tiers (rule 89): no declaration syntax was ever specified — see §1.4 |
+
+Dates promise; buckets describe. The third column exists because a specification that
+quietly carries an unenforceable rule teaches readers to distrust the enforceable ones.
 
 ---
 
@@ -112,26 +121,28 @@ tools that would leak its values.
 
 ### 1.4 Enforcement status of the tier model
 
-The tier model is fully specified and partially enforced. The gap is named here rather
-than left to be discovered:
+Entity-level classification is specified and enforced as of v0.7.1:
 
-- **Rules 87 and 88 are implemented, but only for `decisions[]`.** `visibility` is
-  permitted on any entity; for every other entity type neither the tier value nor the
-  required `classification_reason` is currently checked by the reference validator.
-- **Rule 89 is not implemented.** Field-level tiers are accepted as written; no check
-  verifies that a field tier is equal to or stricter than its entity's tier.
-- **§4.4 Access Enforcement is not implemented in the reference server.** Tier ceilings,
-  key binding, and absence-over-denial are specified as MUST; `orgspec serve` states its
-  own scope as one key without tiers.
+- **Rules 87 and 88 apply to every entity** — units, members, gremien, agents, knowledge
+  concepts, and decisions. The reference validator checks all of them.
+- **§4.4 Access Enforcement is implemented.** `orgspec serve --ceiling <tier>` redacts
+  entities above the ceiling to a card (id, date, tier) and never serializes
+  `confidential` at any ceiling — that tier means *kept out of the open repository
+  entirely*, not *needs a higher key*.
 
-**Consequence for adopters.** A document may declare tiers that no consumer enforces
-today. The declaration is not decorative — it governs rendering and export, and it is the
-input the serving layer reads once enforcement exists — but **a tier is not a security
-boundary until an implementation makes it one.** Do not use `restricted` or
-`confidential` as the only protection for content that must not leak.
+**One gap remains, and it is a specification defect rather than an implementation one.**
+§1.1 and §1.2 describe `visibility` on *individual fields* of `decisions[]` entries, and
+Rule 89 constrains such field tiers — but **no syntax for declaring a field-level tier
+was ever specified**: there is no schema construct for it and no example. A rule whose
+subject cannot be expressed cannot be implemented, and defining that syntax would be new
+semantics, not a patch.
 
-Closing this gap is implementation work against an unchanged specification; under the
-stability policy it ships as PATCH, not as a new minor version.
+Rule 89 therefore stands unimplementable until v0.8 resolves it in one of two ways:
+by specifying the syntax, or by withdrawing the rule and the two sentences that promise
+it. Until then, treat field-level classification as absent: classify the whole decision.
+
+**Consequence for adopters.** Entity tiers are enforced end to end — declaration,
+validation, serving. Field tiers are not, because they cannot be written down.
 
 ---
 
@@ -393,6 +404,10 @@ is metadata and stays visible even where content is redacted.
 **Assertion:** A field-level `visibility` MUST be equal to or stricter than its
 entity's tier.
 **Level:** ERROR
+**Status (v0.7.1): unimplementable as written.** No syntax for declaring a field-level
+tier is specified anywhere in v0.7 — see §1.4. The rule is kept in place, unenforced,
+rather than silently dropped; v0.8 either specifies the syntax or withdraws it together
+with the two sentences in §1.1 and §1.2 that promise the feature.
 
 ### Rules 90–93: Decision Lifecycle
 
@@ -555,3 +570,19 @@ not know what it is enforcing.
   composite tools is marked non-exhaustive against the table in §4.3. Corrected the `$id`
   of `opi-v0.7.schema.json`, which carried the v0.6 URL. The specification file dropped
   its `-draft` suffix; references in `tools/`, `orgspec/`, and the examples follow.
+- **2026-08-01 — `v0.7.1`.** Closes the tier gap §1.4 declared, and reclassifies what
+  cannot be closed. No specification text changed its meaning; this is implementation
+  plus an honest status.
+  - Rules 87–88 now apply to **every** entity type, not only `decisions[]`
+    (`tools/validate.py`). The spec has said so since §1.1; the validator had not.
+  - **§4.4 Access Enforcement is implemented.** `orgspec serve --ceiling <tier>` redacts
+    entities above the ceiling to a card and enforces absence over access-denied. A
+    verification test found `confidential` passing through at the highest ceiling; that
+    tier is now never serialized at any ceiling, because it means *kept out of the open
+    repository entirely* rather than *needs a higher key*. `--ceiling` accepts
+    `public|internal|restricted` for the same reason.
+  - **Rule 89 is marked unimplementable**, not merely unimplemented: field-level tiers
+    have no declaration syntax anywhere in v0.7. The rule stays in place, unenforced and
+    labelled, for v0.8 to specify or withdraw (§1.4).
+  - Added the Maturity table promised by DD-10, and `examples/serve-demo/dec-007` — the
+    first example in the repository that actually carries a tier.

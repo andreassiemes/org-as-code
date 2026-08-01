@@ -14,7 +14,7 @@ the `opi:` field). This file states what a version label promises.
 
 | Version | Status | Scope |
 |---------|--------|-------|
-| **v0.7** | **stable** (tagged `v0.7.0`, 2026-08-01) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile, agent mandate provenance. Rules 87–100. Published as a public draft 2026-07-09, stabilized after implementation feedback ([discussion](../../discussions/1)). |
+| **v0.7** | **stable** (tagged `v0.7.1`, 2026-08-01) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile, agent mandate provenance. Rules 87–100. Published as a public draft 2026-07-09, stabilized after implementation feedback ([discussion](../../discussions/1)). `v0.7.1` closed the tier enforcement gap without changing any specification text. |
 | **v0.6** | **stable** (tagged `v0.6.0`, 2026-07-09) | OKF interoperability, knowledge graph, `log.md` provenance, permissive consumer model. Rules 1–86. |
 | v0.5 and older | superseded | Kept in `spec/` for reference; documents remain valid (see below). |
 

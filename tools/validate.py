@@ -148,6 +148,27 @@ def is_local_ref(ref) -> bool:
 
 # --------------------------------------------------------------------------- checks
 
+def check_visibility(report: Report, label: str, entity: dict, v07: bool) -> bool:
+    """Rules 87-88 for any entity carrying a tier.
+
+    The spec has permitted `visibility` on every entity since v0.7 §1.1; until
+    v0.7.1 only decisions[] were checked. Returns False on a finding.
+    """
+    if not v07:
+        return True
+    vis = as_dict(entity).get("visibility")
+    ok = True
+    if vis is not None and vis not in VISIBILITY_ENUM:  # Rule 87
+        report.fail(f"{label}: visibility '{vis}' not in {sorted(VISIBILITY_ENUM)} (Rule 87)",
+                    needle=str(vis))
+        ok = False
+    if vis in ("restricted", "confidential") and not entity.get("classification_reason"):  # Rule 88
+        report.fail(f"{label}: visibility '{vis}' requires classification_reason (Rule 88)",
+                    needle=str(vis))
+        ok = False
+    return ok
+
+
 def version_at_least(version, floor: tuple[int, int]) -> bool:
     """True when the declared opi version is >= (major, minor).
 
@@ -369,6 +390,28 @@ def check_structure(report: Report, doc: dict) -> None:
                                     f"of mandate_source '{src}' (Rule 99)", needle=str(gid))
     if agents and agents_ok:
         report.ok(f"agents: {len(agents)} instance(s) with resolvable ref + valid scope")
+
+    # -- tier classification across every entity type (v0.7 §1.1, rules 87-88).
+    # decisions[] are checked inline above; this sweep covers the rest.
+    tiers_ok = True
+    tiered: list[tuple[str, dict]] = []
+    for u in units:
+        tiered.append((f"unit '{as_dict(u).get('id', as_dict(u).get('name', '?'))}'", as_dict(u)))
+        for m in as_list(as_dict(u).get("members")):
+            if isinstance(m, dict):
+                tiered.append((f"member '{m.get('id', m.get('name', '?'))}'", m))
+    for g in gremien:
+        tiered.append((f"gremien[] '{as_dict(g).get('id', '?')}'", as_dict(g)))
+    for i, a in enumerate(agents):
+        tiered.append((f"agents[{i}] '{as_dict(a).get('ref', '?')}'", as_dict(a)))
+    for k in as_list(doc.get("knowledge")):
+        tiered.append((f"knowledge[] '{as_dict(k).get('id', '?')}'", as_dict(k)))
+    for label, entity in tiered:
+        if not check_visibility(report, label, entity, v07):
+            tiers_ok = False
+    classified = [1 for _, e in tiered if e.get("visibility")]
+    if v07 and tiers_ok and classified:
+        report.ok(f"visibility: {len(classified)} classified entity/entities, tiers valid")
 
     # -- knowledge graph
     knowledge_ids = set()

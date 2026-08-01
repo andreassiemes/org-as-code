@@ -52,11 +52,51 @@ def _slim(e: dict, keep=("id", "title", "name", "status", "type", "purpose")) ->
     return {k: e[k] for k in keep if k in e}
 
 
+TIER_ORDER = {"public": 0, "internal": 1, "restricted": 2, "confidential": 3}
+REDACTED_KEEP = ("id", "ref", "date", "visibility")
+
+
+def tier_of(entity) -> int:
+    """Classification of an entity; absent means internal (spec §1.2)."""
+    if not isinstance(entity, dict):
+        return TIER_ORDER["internal"]
+    return TIER_ORDER.get(entity.get("visibility"), TIER_ORDER["internal"])
+
+
+def enforce_tier(value, ceiling: int):
+    """Apply the serving obligations of spec §1.1 to a tool result.
+
+    At or below the ceiling the entity passes through untouched. Above it,
+    content is redacted while existence stays visible as a card (id, date,
+    tier), so graph topology remains honest.
+
+    `confidential` is not a higher access level and no ceiling unlocks it: the
+    tier means "kept out of the open repository entirely — never serialize,
+    reference by id only" (§1.1). An entity carrying it is already a spec
+    violation of the document; the server does not compound it by serving it.
+
+    Absence, not access-denied (§4.4): a caller cannot tell a filtered entity
+    from one that does not exist.
+    """
+    if isinstance(value, list):
+        out = [enforce_tier(v, ceiling) for v in value]
+        return [v for v in out if v is not None]
+    if not isinstance(value, dict):
+        return value
+    tier = tier_of(value)
+    if tier >= TIER_ORDER["confidential"]:
+        return None
+    if tier > ceiling:
+        return {k: value[k] for k in REDACTED_KEEP if k in value}
+    return {k: enforce_tier(v, ceiling) for k, v in value.items()}
+
+
 class Catalog:
     """Generated tools over a loaded Model. `describe()` feeds MCP tools/list."""
 
-    def __init__(self, model: Model):
+    def __init__(self, model: Model, ceiling: str = "internal"):
         self.model = model
+        self.ceiling = TIER_ORDER.get(ceiling, TIER_ORDER["internal"])
         self.tools: dict[str, dict] = {}
         self._build()
 
@@ -247,4 +287,7 @@ class Catalog:
         tool = self.tools.get(name)
         if not tool:
             raise KeyError(name)
-        return tool["fn"](**(arguments or {}))
+        # Rule 95 / §4.4: enforcement happens here, on the way out — one gate
+        # every tool result passes through, rather than per-tool filtering that
+        # a new tool could forget.
+        return enforce_tier(tool["fn"](**(arguments or {})), self.ceiling)
