@@ -47,7 +47,7 @@ VERSION_PATTERN = re.compile(r"^\d+\.\d+(\.\d+)?$")
 
 DECISION_REQUIRED = ["id", "date", "gremium", "title", "driver", "approver", "status", "rationale"]
 DECISION_STATUS_ENUM = {"active", "planned", "revoked", "superseded"}
-# v0.7 draft additions (spec/opi-v0.7-draft.md)
+# v0.7 additions (spec/opi-v0.7.md)
 DECISION_STATUS_ENUM_V07 = DECISION_STATUS_ENUM | {"hypothesis"}
 DECISION_TYPE_ENUM = {"two-way", "one-way", "big-bet", "delegated"}
 VISIBILITY_ENUM = {"public", "internal", "restricted", "confidential"}
@@ -148,6 +148,21 @@ def is_local_ref(ref) -> bool:
 
 # --------------------------------------------------------------------------- checks
 
+def version_at_least(version, floor: tuple[int, int]) -> bool:
+    """True when the declared opi version is >= (major, minor).
+
+    A prefix test ("0.7") answers the wrong question: a document declaring 0.8
+    would fall out of every 0.7 gate and be judged against pre-0.7 rules.
+    """
+    if not isinstance(version, str):
+        return False
+    parts = version.split(".")
+    try:
+        return (int(parts[0]), int(parts[1])) >= floor
+    except (IndexError, ValueError):
+        return False
+
+
 def check_structure(report: Report, doc: dict) -> None:
     # -- opi version
     version = doc.get("opi")
@@ -155,7 +170,7 @@ def check_structure(report: Report, doc: dict) -> None:
         report.ok(f"opi version declared ({version})")
     else:
         report.fail(f"opi: missing or not a semver string (got {version!r})", needle="opi")
-    v07 = isinstance(version, str) and version.startswith("0.7")
+    v07 = version_at_least(version, (0, 7))
 
     # -- unit identity
     unit = as_dict(doc.get("unit"))
@@ -264,11 +279,13 @@ def check_structure(report: Report, doc: dict) -> None:
             hint = " ('hypothesis' requires opi >= 0.7)" if status == "hypothesis" and not v07 else ""
             dfail(f"{label}: status '{status}' not in {sorted(allowed)}{hint}",
                   needle=str(status))
-        # -- v0.7 lifecycle checks (run whenever the fields are present)
-        if d.get("decision_type") and d["decision_type"] not in DECISION_TYPE_ENUM:  # Rule 90
+        # -- v0.7 lifecycle checks. Version-gated: `decision_type` carried no controlled
+        # vocabulary before v0.7, and under the permissive consumer model (v0.6, rules
+        # 82-84) a pre-0.7 document may use the key freely.
+        if v07 and d.get("decision_type") and d["decision_type"] not in DECISION_TYPE_ENUM:  # Rule 90
             dfail(f"{label}: decision_type '{d['decision_type']}' not in {sorted(DECISION_TYPE_ENUM)}",
                   needle=str(d["decision_type"]))
-        if d.get("decision_type") in ("one-way", "big-bet") and not d.get("rationale"):  # Rule 90 WARN
+        if v07 and d.get("decision_type") in ("one-way", "big-bet") and not d.get("rationale"):  # Rule 90 WARN
             report.note(f"⚠ {label}: {d['decision_type']} decision without rationale (Rule 90)")
         if status == "hypothesis" and (not d.get("validate") or not d.get("validate_by")):  # Rule 91
             dfail(f"{label}: hypothesis without validate + validate_by (Rule 91)",
@@ -322,6 +339,34 @@ def check_structure(report: Report, doc: dict) -> None:
                 agents_ok = False
                 report.fail(f"{label}: scope.gremien '{gid}' not found in gremien[]",
                             needle=str(gid))
+        # -- v0.7 agent mandate provenance (rules 99-100); fires only when declared
+        src = a.get("mandate_source")
+        if src:
+            role_keys = set(as_dict(as_dict(doc.get("components")).get("roles")))
+            is_role, is_gremium = src in role_keys, src in gremium_ids
+            if not is_role and not is_gremium:  # Rule 100
+                agents_ok = False
+                report.fail(f"{label}: mandate_source '{src}' resolves to neither "
+                            f"components.roles nor gremien[] (Rule 100)", needle=str(src))
+            else:  # Rule 99 — only the dimensions this document can answer
+                if is_role:
+                    owned = {u.get("id") for u in units if u.get("owner") == src}
+                    allowed_gremien = {g.get("id") for g in gremien
+                                       if src in as_list(as_dict(g).get("members"))}
+                else:
+                    owned = None  # a gremium owns no units — not resolvable
+                    allowed_gremien = {src}
+                if owned is not None:
+                    for uid in as_list(scope.get("units")):
+                        if uid in unit_ids and uid not in owned:
+                            agents_ok = False
+                            report.fail(f"{label}: scope.units '{uid}' exceeds the authority "
+                                        f"of mandate_source '{src}' (Rule 99)", needle=str(uid))
+                for gid in as_list(scope.get("gremien")):
+                    if gid in gremium_ids and gid not in allowed_gremien:
+                        agents_ok = False
+                        report.fail(f"{label}: scope.gremien '{gid}' exceeds the authority "
+                                    f"of mandate_source '{src}' (Rule 99)", needle=str(gid))
     if agents and agents_ok:
         report.ok(f"agents: {len(agents)} instance(s) with resolvable ref + valid scope")
 
