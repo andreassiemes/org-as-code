@@ -111,6 +111,17 @@ decisions:
     scope: team
     rationale: "Council review below 1000 EUR impact cost more than the risk it prevented"
     revises: dec-002
+  - id: dec-006
+    date: 2026-07-10
+    title: "Every tribe documents its decisions in the org repository within 30 days"
+    status: active
+    decision_type: one-way
+    gremium: platform-council
+    driver: tech-lead
+    approver: platform-council
+    scope: cross-team
+    rationale: "Undocumented decisions were re-litigated across teams; a shared record keeps the org auditable"
+    conditions: "Decisions must land in the org repository within 30 days of being taken"
 
 agents:
   - ref: support-triage-agent
