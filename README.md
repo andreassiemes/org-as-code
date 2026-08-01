@@ -1,5 +1,9 @@
 # Org as Code
 
+[![spec](https://img.shields.io/badge/OPI%20spec-v0.6%20stable-2b5ea7)](VERSIONING.md)
+[![draft](https://img.shields.io/badge/v0.7-public%20draft-CB6120)](../../tree/v0.7-draft)
+[![license](https://img.shields.io/badge/license-MIT-6a6a72)](LICENSE)
+
 > Making organizational design reviewable, testable, deployable.
 
 **Org as Code** is an open framework for defining organizational structures, governance, and decision flows in version-controlled, AI-readable formats — so they can be treated like software: reviewed, tested, and deployed.
@@ -174,9 +178,9 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 ## Status
 
-**V0.7** (public draft — [discussion open](../../discussions)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), and the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)). Validation Rules 87–98. Backward-compatible with V0.6.
+**V0.7** (**stable**, tagged `v0.7.0` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
 
-**V0.6** (draft) — OKF Interoperability & Knowledge Graph: lossless OKF export, first-class `knowledge[]` entity, OKF round-trip import, native `log.md` provenance, permissive consumer model. Validation Rules 72–86. Backward-compatible with V0.5.
+**V0.6** (**stable**, tagged `v0.6.0` — see [VERSIONING.md](VERSIONING.md)) — OKF Interoperability & Knowledge Graph: lossless OKF export, first-class `knowledge[]` entity, OKF round-trip import, native `log.md` provenance, permissive consumer model. Validation Rules 72–86. Backward-compatible with V0.5.
 
 **V0.5** (draft) — Decision Graph, Agent Context API, MCP integration, `orgspec` CLI. 9 new rules (R63–R71). Backward-compatible with V0.4.
 
