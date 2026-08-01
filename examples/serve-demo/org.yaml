@@ -1,5 +1,5 @@
 # serve-demo — a fictional organization exercising `orgspec serve`
-# (Serving Profile, spec/opi-v0.7-draft.md §4). Fictitious "Meridian Works" org;
+# (Serving Profile, spec/opi-v0.7.md §4). Fictitious "Meridian Works" org;
 # includes v0.7 lifecycle fields so the composite tools have something to traverse.
 #
 #   orgspec serve examples/serve-demo --watch
@@ -125,6 +125,11 @@ decisions:
 
 agents:
   - ref: support-triage-agent
+    # Mandate provenance (v0.7 §3a): the agent acts under its own name, but its
+    # authority derives from the Platform Council. Remove that gremium and rule 100
+    # fails on the next run — no separate revocation step.
+    mandate_source: platform-council
+    valid_until: 2026-12-31
     scope:
       units: [payments]
       data: [tickets, order-state]

@@ -1,8 +1,10 @@
-# OPI Specification v0.7 — Draft (Addendum)
+# OPI Specification v0.7 (Addendum)
 
-**Status:** DRAFT — open for discussion. This document is published as a public draft
-under the project's release process (no formal RFC round; see §8, DD-1). Feedback via
-GitHub Discussions; design-partner review runs in parallel on dedicated issues.
+**Status:** STABLE — tagged `v0.7.0`. Under the project's stability policy
+([VERSIONING.md](../VERSIONING.md)) the spec text, schema, and validation rules of this
+minor version do not change anymore; fixes ship as PATCH and never alter semantics. The
+version was published as a public draft on 2026-07-09 and stabilized after implementation
+feedback (no formal RFC round; see §8, DD-1).
 
 **Baseline:** OPI v0.6 (rules 1–86). Everything in this addendum is **fully additive** —
 v0.6, v0.5, and v0.4 documents work without modification.
@@ -11,7 +13,7 @@ v0.6, v0.5, and v0.4 documents work without modification.
 
 ## Abstract
 
-OPI v0.7 makes decisions *live* and organizations *servable*. It introduces five features:
+OPI v0.7 makes decisions *live* and organizations *servable*. It introduces six features:
 
 1. **Visibility Tiers** (`visibility:`, core attribute) — A data-classification attribute
    on entities and fields, independent of any consumer. One declaration governs rendering,
@@ -30,7 +32,11 @@ OPI v0.7 makes decisions *live* and organizations *servable*. It introduces five
    (declared since v0.5) actually serves: a deterministic field-type → tool-type
    derivation, three composite tools (`who_decides`, `get_decision_chain`,
    `get_agent_mandate`, SHOULD), and server-side visibility enforcement.
-5. **Adoption Staircase** (non-normative) — Two lanes for OPI adoption: the personal
+5. **Agent Mandate Provenance** (`mandate_source`, `valid_until`) — An `agents[]` entry
+   already declares *what* an agent may touch and *where it escalates*. It could not
+   declare *from whom that authority derives* — and therefore not what happens when the
+   source of that authority goes away.
+6. **Adoption Staircase** (non-normative) — Two lanes for OPI adoption: the personal
    repo-and-agent lane (L0/L1) and the served context-layer lane (L2). The boundary
    between them is the number of people, not the amount of data.
 
@@ -103,6 +109,29 @@ A conformant renderer shows D-2026-014 to non-circle readers as a redacted card
 (id, date, tier — no title, no substance). A conformant server (§4) omits its content
 from tool results for keys below `restricted` — and does not advertise field-filter
 tools that would leak its values.
+
+### 1.4 Enforcement status of the tier model
+
+The tier model is fully specified and partially enforced. The gap is named here rather
+than left to be discovered:
+
+- **Rules 87 and 88 are implemented, but only for `decisions[]`.** `visibility` is
+  permitted on any entity; for every other entity type neither the tier value nor the
+  required `classification_reason` is currently checked by the reference validator.
+- **Rule 89 is not implemented.** Field-level tiers are accepted as written; no check
+  verifies that a field tier is equal to or stricter than its entity's tier.
+- **§4.4 Access Enforcement is not implemented in the reference server.** Tier ceilings,
+  key binding, and absence-over-denial are specified as MUST; `orgspec serve` states its
+  own scope as one key without tiers.
+
+**Consequence for adopters.** A document may declare tiers that no consumer enforces
+today. The declaration is not decorative — it governs rendering and export, and it is the
+input the serving layer reads once enforcement exists — but **a tier is not a security
+boundary until an implementation makes it one.** Do not use `restricted` or
+`confidential` as the only protection for content that must not leak.
+
+Closing this gap is implementation work against an unchanged specification; under the
+stability policy it ships as PATCH, not as a new minor version.
 
 ---
 
@@ -213,6 +242,42 @@ ceiling and redaction on top of key-tier enforcement.
 
 ---
 
+## 3a. Schema Reference: Agent Mandate Provenance
+
+An `agents[]` entry already declares *what* an agent may touch (`scope`) and *where it
+escalates* (`escalation_path`). What it cannot express is *from whom that authority is
+derived* — and therefore what happens when the source of that authority goes away.
+
+### 3a.1 The attributes
+
+```yaml
+agents:
+  - ref: support-triage-agent
+    mandate_source: platform-council    # role_ref or gremium the authority derives from
+    valid_until: 2026-10-31             # optional; the derivation expires
+    scope:                              # unchanged (v0.5)
+      units: [payments]
+      data: [tickets, order-state]
+    escalation_path: [payments, platform-council]
+```
+
+| Key | Semantics |
+|-----|-----------|
+| `mandate_source` | OPTIONAL. A `role_ref` (from `components.roles`) or a gremium id from which this agent's authority is derived. When absent, the agent is an independent actor and its `scope` stands on its own — it must then be justified wherever an independent actor would be |
+| `valid_until` | OPTIONAL. ISO date after which the derivation no longer holds. Consumers MUST evaluate it against an external timestamp — a commit date, a CI run, a ratification reference — never against a value the agent itself writes |
+
+**Design intent.** `mandate_source` is provenance, not delegation: the agent remains the
+actor of its own operations, and nothing in this section reassigns authorship. The
+declaration answers a governance question — *who is answerable for this agent being
+allowed to do this* — that neither `scope` nor `escalation_path` answers.
+
+**Revocation is not a field.** An agent's derived mandate ends when its source ceases to
+exist. That is referential integrity (Rule 100), not a lifecycle flag: remove the role or
+the gremium, and every mandate derived from it fails validation on the next run. A
+dedicated `on_revoked` key would imply a state in which revocation does *not* propagate.
+
+---
+
 ## 4. Serving Profile (normative for serving implementations)
 
 > Fills the declaration that has existed since v0.5: an agent's `context_endpoint` with
@@ -255,7 +320,7 @@ conformance suite:
 | `get_decision_chain(id)` | "How did we get here?" | traverses `revises`, `triggers`, `consequences`, `supersedes`, `conflicts_with` |
 | `get_agent_mandate(ref)` | "What may this AI agent decide, and where does it escalate?" | reads `agents[]` scope + `escalation_path` — the governance answer for agent oversight |
 
-### 4.4 Enforcement (MUST)
+### 4.4 Access Enforcement (MUST)
 
 1. **Server-side, never client-side.** Visibility enforcement (§1) happens in the
    serving layer. A conformant server MUST NOT rely on the client or the model to
@@ -304,7 +369,8 @@ Do not start at L2. Every OPI adoption begins as a repo one person can read.
 
 Rules continue numbering from v0.6 (last rule: 86). Rules 87–89 cover Visibility;
 90–93 cover the Decision Lifecycle; 94 covers the `ai:` block; 95–98 cover the Serving
-Profile (conformance rules for serving implementations, not document lint).
+Profile (conformance rules for serving implementations, not document lint); 99–100 cover
+Agent Mandate Provenance.
 
 ### Rules 87–89: Visibility
 
@@ -387,6 +453,39 @@ bind to the key in the serving layer.
 
 **Assertion:** A conformant server SHOULD provide `who_decides`, `get_decision_chain`,
 and `get_agent_mandate` with the semantics of §4.3. (MUST from v1.0.)
+**Note:** This enumeration is non-exhaustive; the table in §4.3 is the authoritative list.
+
+### Rules 99–100: Agent Mandate Provenance
+
+#### Rule 99: Derived Mandates Compose Strictly
+
+**Assertion:** If an agent declares `mandate_source`, its `scope` MUST NOT exceed the
+authority of that source in any dimension the document makes resolvable. Which dimensions
+those are depends on what the source is:
+
+| Source is a… | `scope.units` | `scope.gremien` |
+|---|---|---|
+| **role** (`components.roles`) | subset of units with `owner: <source>` | subset of gremien listing the source in `members` |
+| **gremium** | not resolvable — a gremium does not own units | the source gremium itself only |
+
+A scope entry that names an entity absent from the document is out of scope for this rule;
+existing referential-integrity checks cover that case.
+**Rationale:** A derived authority that exceeds its origin is not a derivation but a new
+grant, and must be declared as one. Same composition principle as Rule 94, one level up.
+**Level:** ERROR
+**Implementation note:** `components.roles.<key>` carries `title`, `level`, `purpose`, and
+`accountabilities` — it does not declare decision types, so `scope.decision_types` is not
+checked. A rule that demanded information the schema does not hold would be
+unimplementable, not strict (§8, DD-11).
+
+#### Rule 100: Mandate Source Must Resolve
+
+**Assertion:** A `mandate_source` MUST resolve to an existing `role_ref` in
+`components.roles` or to an existing gremium id.
+**Rationale:** This is the revocation mechanism. Remove the role, and every mandate
+derived from it fails validation on the next run — no separate revocation step, no window
+in which an orphaned agent keeps its authority.
+**Level:** ERROR
 
 ---
 
@@ -397,6 +496,10 @@ All v0.7 features are additive. `visibility` defaults preserve current behavior
 Permissive Consumer Model — v0.6 consumers tolerate the unknown enum value by design
 (rule 84). No field is renamed, removed, or re-typed. v0.6 documents validate unchanged
 under v0.7.
+
+`mandate_source` and `valid_until` (§3a) are OPTIONAL keys on `agents[]`; an agent without
+them behaves exactly as in v0.6. Rules 99 and 100 fire only when `mandate_source` is
+present, so no existing document gains a finding from them.
 
 ---
 
@@ -409,6 +512,27 @@ under v0.7.
 | DD-3 | **Composite tools SHOULD, not MUST** | A MUST nobody can test weakens the spec; the conformance suite arrives with v1.0. Naming and specifying the tools now claims the semantics |
 | DD-4 | **Serving is read-only** | The write path *is* the repository's change process. An endpoint that mutates the org bypasses the governance OPI exists to provide |
 | DD-5 | **Lifecycle fields over a state machine** | A full workflow engine in the schema would be premature; dated logs (`reopen_log`), explicit tests (`validate_by`), and supersede edges express the lifecycle without prescribing tooling |
+| DD-6 | **Declare what people must honour, not what machines can enforce** | Systems that couple declaration to enforcement can only express rules with an enforcement point — file permissions, transport hooks, channel membership. An organisation's binding rules mostly have none: a mandate holds because people honour it. OPI declares that class of rule; it does not pretend to enforce it |
+| DD-7 | **A decision is not its effect** | Recording that something was decided must never imply that it happened. The two are separate facts with separate timestamps, and conflating them makes the record claim more than it knows |
+| DD-8 | **A derivation never exceeds its source** | Applies to `ai:` ceilings (Rule 94), to agent mandates (Rule 99), and to any future authority-over-authority relation. Where a derived thing would need more than its origin, the model is wrong, not the ceiling |
+| DD-9 | **Self-reported values need an external anchor** | A time bound set by the party it constrains is not a bound. Anything an entity writes about its own rights, validity, or freshness MUST be evaluated against a timestamp outside its control — this is why `valid_until` (§3a) is explicitly not checked against a value the agent supplies |
+| DD-10 | **State maturity in three buckets, not as a roadmap** | Implemented / specified-but-unimplemented / opinion-without-text. Dates promise; buckets describe. A reader deciding whether to build against the specification needs the second, not the first — §1.4 applies this to the specification itself |
+| DD-11 | **A rule fires only where the document can answer it** | Rule 99 checks the dimensions `components.roles` and the entity graph actually carry, and stays silent on the rest. A rule that demands information the schema does not hold is not strict — it is unimplementable, and an unimplementable ERROR trains readers to ignore the validator |
+
+### Relation to agentic workspaces
+
+Agentic collaboration platforms — Block's Buzz is the most developed public example —
+declare authority wherever a runtime can enforce it: who may push to a protected branch,
+who may moderate, who is in which channel. Their guarantees are strong precisely because
+an enforcement point exists.
+
+An organisation's binding rules mostly have no such point. That a committee decides budget
+allocation for the next two quarters, with a named escalation path, is not a question any
+relay can answer — it holds because it was declared, ratified, and is honoured.
+
+OPI declares that second class. The two are complementary rather than competing: a mandate
+without an enforcement point stays paper, and an enforcement point without a mandate does
+not know what it is enforcing.
 
 ---
 
@@ -423,3 +547,11 @@ under v0.7.
   `examples/serve-demo/` is a real v0.7 document. The implementation tested the draft
   before publication — one adjustment fed back: reopen-log format validation accepts
   both em-dash and hyphen separators.
+- **2026-08-01** — **Stabilized as `v0.7.0`.** Added: Agent Mandate Provenance (§3a,
+  rules 99–100); §1.4, which states plainly which parts of the tier model are enforced
+  today and which are not; design decisions DD-6 to DD-11 and the relation to agentic
+  workspaces (§8). Retitled §4.4 from *Enforcement* to *Access Enforcement*, so that one
+  word does not name both access control and effect in the world. Rule 98's list of
+  composite tools is marked non-exhaustive against the table in §4.3. Corrected the `$id`
+  of `opi-v0.7.schema.json`, which carried the v0.6 URL. The specification file dropped
+  its `-draft` suffix; references in `tools/`, `orgspec/`, and the examples follow.

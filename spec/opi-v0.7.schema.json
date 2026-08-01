@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://org-as-code.com/schemas/opi-v0.6.schema.json",
+  "$id": "https://org-as-code.com/schemas/opi-v0.7.schema.json",
   "title": "OPI Specification v0.7",
-  "description": "OPI v0.7 draft schema — additive delta on v0.6: visibility tiers, decision lifecycle, ai: block. See spec/opi-v0.7-draft.md",
+  "description": "OPI v0.7 schema — additive delta on v0.6: visibility tiers, decision lifecycle, ai: block. See spec/opi-v0.7.md",
   "type": "object",
   "required": [
     "opi",
@@ -1777,6 +1777,15 @@
           },
           "classification_reason": {
             "type": "string"
+          },
+          "mandate_source": {
+            "type": "string",
+            "description": "Role_ref (components.roles) or gremium id this agent's authority derives from. Absent means the agent is an independent actor. See spec/opi-v0.7.md §3a."
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date",
+            "description": "ISO date after which the derivation no longer holds. Consumers evaluate it against an external timestamp, never against a value the agent writes."
           }
         }
       }

@@ -1,4 +1,4 @@
-"""Tool catalog for the OPI Serving Profile (spec/opi-v0.7-draft.md §4.2–§4.3).
+"""Tool catalog for the OPI Serving Profile (spec/opi-v0.7.md §4.2–§4.3).
 
 The catalog is derived deterministically from the entity field table below — one
 row per servable field, mirroring the v0.6 JSON Schema. Field kinds map to tool

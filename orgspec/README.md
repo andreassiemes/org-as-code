@@ -10,7 +10,7 @@ python3 -m orgspec serve <repo-dir> [--watch] [--key K] [--port 8484]
 ## `orgspec serve` — the Serving Profile, running
 
 Reference implementation of the **OPI v0.7 Serving Profile**
-(`spec/opi-v0.7-draft.md` §4): exposes an OPI repository to AI agents as an MCP
+(`spec/opi-v0.7.md` §4): exposes an OPI repository to AI agents as an MCP
 context endpoint — **without moving the source of truth**. The repo (files, PRs,
 history) stays canonical; the server is a stateless projection of the working tree.
 

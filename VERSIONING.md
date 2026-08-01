@@ -14,9 +14,14 @@ the `opi:` field). This file states what a version label promises.
 
 | Version | Status | Scope |
 |---------|--------|-------|
+| **v0.7** | **stable** (tagged `v0.7.0`, 2026-08-01) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile, agent mandate provenance. Rules 87–100. Published as a public draft 2026-07-09, stabilized after implementation feedback ([discussion](../../discussions/1)). |
 | **v0.6** | **stable** (tagged `v0.6.0`, 2026-07-09) | OKF interoperability, knowledge graph, `log.md` provenance, permissive consumer model. Rules 1–86. |
-| v0.7 | draft ([branch](../../tree/v0.7-draft), [discussion](../../discussions/1)) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile. Rules 87–98. |
 | v0.5 and older | superseded | Kept in `spec/` for reference; documents remain valid (see below). |
+
+**Note on enforcement.** A stable label promises that the *specification* does not change
+anymore — not that every rule is implemented. Where the reference implementation lags the
+text, the specification says so: see v0.7 §1.4 for the tier model. Closing such a gap is
+PATCH work, never a new minor version.
 
 ## Compatibility rules
 
