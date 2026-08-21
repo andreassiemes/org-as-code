@@ -1,7 +1,7 @@
 # Org as Code
 
-[![spec](https://img.shields.io/badge/OPI%20spec-v0.6%20stable-2b5ea7)](VERSIONING.md)
-[![draft](https://img.shields.io/badge/v0.7-public%20draft-CB6120)](../../tree/v0.7-draft)
+[![spec](https://img.shields.io/badge/OPI%20spec-v0.7%20stable-2b5ea7)](VERSIONING.md)
+[![rules](https://img.shields.io/badge/validation%20rules-100-CB6120)](spec/opi-v0.7.md)
 [![license](https://img.shields.io/badge/license-MIT-6a6a72)](LICENSE)
 
 > Making organizational design reviewable, testable, deployable.
@@ -35,13 +35,16 @@ org-as-code/
 │   ├── opi-v0.1.md                 #   Foundation spec (669 lines)
 │   ├── opi-v0.2.md                 #   Full spec (1500+ lines, 36 validation rules)
 │   ├── opi-v0.2.schema.json        #   JSON Schema (V0.2)
-│   ├── opi-v0.3.md                 #   Current stable (BP integration, interface methods)
+│   ├── opi-v0.3.md                 #   BP integration, interface methods, org.yaml
 │   ├── opi-v0.3.schema.json        #   JSON Schema (V0.3)
 │   ├── opi-v0.4.md                 #   Roles, Agents, Drift Detection (1689 lines)
 │   ├── opi-v0.4.schema.json        #   JSON Schema (V0.4, backward-compatible)
 │   ├── opi-v0.5.md                 #   Decision Graph, Agent Context API (1029 lines)
-│   ├── opi-v0.6.md                 #   Draft: OKF Interop & Knowledge Graph
-│   └── opi-v0.6.schema.json        #   JSON Schema (V0.6, backward-compatible)
+│   ├── opi-v0.6.md                 #   OKF Interop & Knowledge Graph (stable)
+│   ├── opi-v0.6.schema.json        #   JSON Schema (V0.6, backward-compatible)
+│   ├── opi-v0.7.md                 #   Current stable: visibility tiers, decision lifecycle,
+│   │                               #   ai: block, Serving Profile, agent mandate provenance
+│   └── opi-v0.7.schema.json        #   JSON Schema (V0.7, backward-compatible)
 ├── examples/
 │   ├── governance/                 # Unit definitions
 │   │   ├── committee-structure.yaml
@@ -132,7 +135,15 @@ The specification defines 15+ sections for modeling organizational units, plus o
 | `dependencies` | Unit relationships, SLAs, escalation flows |
 | `status` | Conditions, health signals, **drift detection** |
 
-**New in V0.6 (Draft):**
+**New in V0.7 (Stable):**
+- **Visibility tiers** — `visibility` as a core attribute on every entity, with `classification_reason`
+- **Decision lifecycle** — `decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`
+- **`ai:` block** — RAG governance: what an agent may retrieve, cite, and derive, with composable ceilings
+- **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`; `orgspec serve` is the running reference implementation
+- **Agent mandate provenance** — `mandate_source` / `valid_until` on `agents[]`; mandates compose strictly and never dangle
+- **14 new validation rules** (R87–R100), backward-compatible with V0.6
+
+**New in V0.6 (Stable):**
 - **OKF Export Profile** — lossless mapping of an OPI document set to a conformant [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog) v0.1 bundle, with a controlled OPI→OKF `type` vocabulary. The OPI source stays the strict truth; the bundle is a portable, agent-readable projection
 - **`knowledge[]`** — first-class Knowledge Graph: typed knowledge concepts (playbooks, references, definitions) beside structure, bidirectionally linked via `knowledge_refs[]` / `relates_to[]`
 - **OKF Import** — round-trip ingestion of a conformant OKF bundle back into OPI (`orgspec import --okf`): lossless out, best-effort in
@@ -141,7 +152,7 @@ The specification defines 15+ sections for modeling organizational units, plus o
 - **`orgspec` CLI** — new commands: `orgspec export --target okf`, `orgspec import --okf`, `orgspec provenance`
 - **15 new validation rules** (R72–R86), backward-compatible with V0.5
 
-**New in V0.5 (Draft):**
+**New in V0.5:**
 - **`decisions[]`** — Decision Graph with triggers, consequences, revisions. Governance audit trail, impact analysis, cycle detection (DAG)
 - **Agent Context API** — `escalation_path`, `scope` extensions, `context_endpoint` config. JSON response schema for agent runtime
 - **MCP Server integration** — Model Context Protocol tools for AI agent governance context
@@ -165,7 +176,7 @@ The specification defines 15+ sections for modeling organizational units, plus o
 
 **Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
 
-→ Latest: [`spec/opi-v0.6.md`](spec/opi-v0.6.md) (Draft) | Stable: [`spec/opi-v0.3.md`](spec/opi-v0.3.md) | JSON Schemas: [V0.6](spec/opi-v0.6.schema.json) · [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json)
+→ Current stable: [`spec/opi-v0.7.md`](spec/opi-v0.7.md) (tagged `v0.7.1`) | JSON Schemas: [V0.7](spec/opi-v0.7.schema.json) · [V0.6](spec/opi-v0.6.schema.json) · [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json) | Stability policy: [VERSIONING.md](VERSIONING.md)
 
 ## Templates
 
@@ -178,7 +189,7 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 ## Status
 
-**V0.7** (**stable**, tagged `v0.7.0` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
+**V0.7** (**stable**, tagged `v0.7.0` / `v0.7.1` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
 
 **V0.6** (**stable**, tagged `v0.6.0` — see [VERSIONING.md](VERSIONING.md)) — OKF Interoperability & Knowledge Graph: lossless OKF export, first-class `knowledge[]` entity, OKF round-trip import, native `log.md` provenance, permissive consumer model. Validation Rules 72–86. Backward-compatible with V0.5.
 
