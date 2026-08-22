@@ -9,7 +9,14 @@ shapes exactly as the Serving Profile specifies:
     text     -> search_<entity>_by_text   (one tool per entity, pooled fields)
     relation -> traversal tools
 
-Composite tools (§4.3, SHOULD): who_decides, get_decision_chain, get_agent_mandate.
+Composite tools (§4.3, SHOULD): who_decides, get_decision_chain, get_agent_mandate,
+and since v0.8 get_undelivered_decisions (spec/opi-v0.8.md §3.2).
+
+Rule 103 (v0.8): derivation is bounded by the instance (a field no served document
+populates yields no tool) and by nesting (nested lists and objects such as
+`decisions[].enforcement` and `approval.records[]` travel with their record and
+derive no tools of their own). Both bounds are structural here: only the fields in
+ENTITIES are ever considered, and only when at least one record carries them.
 """
 
 from __future__ import annotations
@@ -49,7 +56,11 @@ def _text_hit(entity: dict, fields: list[str], query: str) -> bool:
 
 
 def _slim(e: dict, keep=("id", "title", "name", "status", "type", "purpose")) -> dict:
-    return {k: e[k] for k in keep if k in e}
+    """Headline projection. `visibility` and `date` always travel with it: every
+    tool result passes through `enforce_tier` on the way out (Rule 95, v0.7 §4.4
+    point 1), and a projection that dropped the tier first would serve a
+    restricted entity as internal."""
+    return {k: e[k] for k in (*keep, "date", "visibility") if k in e}
 
 
 TIER_ORDER = {"public": 0, "internal": 1, "restricted": 2, "confidential": 3}
@@ -101,13 +112,13 @@ class Catalog:
         self._build()
 
     # -- catalog construction -------------------------------------------------
-    def _add(self, name: str, description: str, params: dict, fn):
+    def _add(self, name: str, description: str, params: dict, fn, required=None):
         self.tools[name] = {
             "description": description,
             "inputSchema": {
                 "type": "object",
                 "properties": params,
-                "required": list(params.keys()),
+                "required": list(params.keys()) if required is None else list(required),
             },
             "fn": fn,
         }
@@ -184,6 +195,20 @@ class Catalog:
                 {"id": {"type": "string"}},
                 self._decision_chain,
             )
+        if m.entities.get("decisions"):
+            self._add(
+                "get_undelivered_decisions",
+                "What did we decide and never carry? Active decisions whose enforcement "
+                "is pending and whose expected_by has passed as of the given date "
+                "(default: today). Always returns the enforcement coverage of the set it "
+                "examined, so an empty answer cannot be read as 'nothing open' "
+                "(v0.8 §3.2).",
+                {"as_of": {"type": "string",
+                           "description": "YYYY-MM-DD clock to judge expected_by against; "
+                                          "default: today"}},
+                self._undelivered_decisions,
+                required=[],
+            )
         if m.entities.get("agents"):
             self._add(
                 "get_agent_mandate",
@@ -203,6 +228,7 @@ class Catalog:
                 "purpose": g.get("purpose"),
                 "cadence": g.get("cadence"),
                 "members": g.get("members", []),
+                "visibility": g.get("visibility"),
             }
             for g in m.entities.get("gremien", [])
             if q in json.dumps(g, default=str).lower()
@@ -215,6 +241,8 @@ class Catalog:
                 "driver": d.get("driver"),
                 "approver": d.get("approver"),
                 "gremium": d.get("gremium"),
+                "date": d.get("date"),
+                "visibility": d.get("visibility"),
             }
             for d in m.entities.get("decisions", [])
             if _text_hit(d, ["title", "rationale", "scope"], topic)
@@ -262,6 +290,53 @@ class Catalog:
             for n in sorted(seen)
         ]
         return {"root": id, "nodes": nodes, "edges": edges}
+
+    def _undelivered_decisions(self, as_of: str | None = None):
+        import datetime
+
+        def to_date(v):
+            if isinstance(v, datetime.datetime):
+                return v.date()
+            if isinstance(v, datetime.date):
+                return v
+            try:
+                return datetime.date.fromisoformat(str(v))
+            except (TypeError, ValueError):
+                return None
+
+        clock = to_date(as_of) if as_of else datetime.date.today()
+        if clock is None:
+            return {"error": f"as_of {as_of!r} is not a YYYY-MM-DD date"}
+        # Coverage is bounded to what the requesting key may see (§3.2): count over the
+        # same tier-enforced view the result itself passes through, so a redacted card
+        # (no `status`) is neither "active" nor "annotated" here.
+        visible = enforce_tier(list(self.model.entities.get("decisions", [])), self.ceiling)
+        active = [d for d in visible if isinstance(d, dict) and d.get("status") == "active"]
+        with_block = [d for d in active if isinstance(d.get("enforcement"), dict)]
+        with_expect = [d for d in with_block if d["enforcement"].get("expected_by")]
+        hits = []
+        for d in with_expect:
+            enf = d["enforcement"]
+            exp = to_date(enf.get("expected_by"))
+            if enf.get("status") == "pending" and exp and exp < clock:
+                hits.append({
+                    "id": d.get("id"), "title": d.get("title"), "date": d.get("date"),
+                    "gremium": d.get("gremium"), "driver": d.get("driver"),
+                    "expected_by": enf.get("expected_by"),
+                    "overdue_days": (clock - exp).days,
+                })
+        return {
+            "as_of": clock.isoformat(),
+            "undelivered": hits,
+            "coverage": {
+                "active": len(active),
+                "with_enforcement": len(with_block),
+                "with_expected_by": len(with_expect),
+                "line": (f"{len(with_block)} of {len(active)} active decisions carry an "
+                         f"enforcement block, {len(with_expect)} of {len(with_block)} state "
+                         f"an expectation"),
+            },
+        }
 
     def _agent_mandate(self, ref: str):
         for a in self.model.entities.get("agents", []):
