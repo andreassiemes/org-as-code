@@ -1,10 +1,13 @@
 # serve-demo — a fictional organization exercising `orgspec serve`
 # (Serving Profile, spec/opi-v0.7.md §4). Fictitious "Meridian Works" org;
-# includes v0.7 lifecycle fields so the composite tools have something to traverse.
+# includes v0.7 lifecycle fields so the composite tools have something to traverse,
+# and v0.8 `enforcement` / `approval` blocks (spec/opi-v0.8.md §1–§2) so that
+# `get_undelivered_decisions` and Rules 101–102 have real input.
 #
 #   orgspec serve examples/serve-demo --watch
+#   tools/validate.py examples/serve-demo/org.yaml --as-of 2026-08-22
 
-opi: "0.7.0"
+opi: "0.8.0"
 
 org:
   id: meridian-works
@@ -62,6 +65,13 @@ decisions:
     scope: cross-team
     rationale: "Lowest ops burden at current headcount; migration paths are well understood"
     review_date: 2026-11-01
+    # v0.8 §2: a delegated-style single consent, anchored to the commit that recorded it
+    approval:
+      quorum: 1
+      records:
+        - by: tech-lead
+          at: 2026-05-12
+          ref: "commit:4c1d9e2"
   - id: dec-002
     date: 2026-04-02
     title: "Access management: every service authenticates via the shared identity broker"
@@ -75,6 +85,22 @@ decisions:
     conditions: "Broker uptime SLO of 99.9% must hold for two consecutive quarters"
     dissent:
       - "payments lead: broker is a single point of failure for checkout; revisit at Q4"
+    # v0.8 §1: decided in April, in effect since the first service switched over (T3).
+    # The effect is a separate dated fact with its own anchor, not an implication of `status`.
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-04-20
+      ref: "pr:platform-412"
+    # v0.8 §2: two consents from the council's declared membership, same minutes anchor.
+    approval:
+      quorum: 2
+      records:
+        - by: tech-lead
+          at: 2026-04-02
+          ref: "minutes:platform-council-2026-04-02"
+        - by: platform-engineer
+          at: 2026-04-02
+          ref: "minutes:platform-council-2026-04-02"
   - id: dec-003
     date: 2026-06-20
     title: "Usage-based pricing for the public API"
@@ -100,6 +126,13 @@ decisions:
     rationale: "Predictable revenue was the original argument; falsified by deal evidence"
     reopen_log:
       - "2026-06-03 — two enterprise deals stalled where usage concentrated in few power users"
+    # v0.8 §1.3: the decision was superseded, but its recorded effect stays — it did take
+    # effect, and it stopped on a day. `lapsed` keeps first_effect_at and ref (one episode).
+    enforcement:
+      status: lapsed
+      first_effect_at: 2026-03-01
+      lapsed_at: 2026-06-03
+      ref: "commit:7b2e0c1"
   - id: dec-005
     date: 2026-06-25
     title: "Payments team may ship provider changes without council review below 1000 EUR impact"
@@ -122,6 +155,11 @@ decisions:
     scope: cross-team
     rationale: "Undocumented decisions were re-litigated across teams; a shared record keeps the org auditable"
     conditions: "Decisions must land in the org repository within 30 days of being taken"
+    # v0.8 §1: decided, not yet carried. Once the clock passes expected_by this is the
+    # Rule 101 overdue WARNING and the one hit of `get_undelivered_decisions`.
+    enforcement:
+      status: pending
+      expected_by: 2026-08-10
   # Tier demonstration (§1.1): served below `restricted`, this decision appears as a
   # redacted card — id, date and tier only. `orgspec serve --ceiling restricted` shows
   # it in full. Its existence stays visible either way, so graph topology stays honest.
