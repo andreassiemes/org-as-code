@@ -138,6 +138,24 @@ class UndeliveredDecisions(unittest.TestCase):
         self.assertEqual(out["undelivered"], [])
         self.assertEqual(out["coverage"]["with_enforcement"], 3)
 
+    def test_composites_redact_above_ceiling(self):
+        # v0.7 §4.4 point 1 / Rule 95: every tool result is tier-enforced on the way
+        # out. Before the fix, _slim() and the who_decides projection dropped
+        # `visibility`, so a restricted decision reached by traversal or text match
+        # was served in full under ceiling `internal`.
+        text = MINIMAL.replace("{SCOPE}", "").replace(
+            'title: "Decided and carried"', 'title: "Decided and carried"\n    supersedes: [dec-4]')
+        c = catalog(text)
+        chain = c.call("get_decision_chain", {"id": "dec-1"})
+        node = next(n for n in chain["nodes"] if n["id"] == "dec-4")
+        self.assertNotIn("title", node)          # redacted card: id, date, visibility
+        self.assertEqual(node.get("visibility"), "restricted")
+        who = c.call("who_decides", {"topic": "Restricted"})
+        self.assertTrue(all("title" not in p for p in who["precedents"]), who)
+        # a higher ceiling sees it in full
+        full = catalog(text, ceiling="restricted").call("get_decision_chain", {"id": "dec-1"})
+        self.assertIn("title", next(n for n in full["nodes"] if n["id"] == "dec-4"))
+
     def test_bad_as_of(self):
         c = catalog(MINIMAL.replace("{SCOPE}", ""))
         self.assertIn("error", c.call("get_undelivered_decisions", {"as_of": "next week"}))

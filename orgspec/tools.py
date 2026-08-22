@@ -56,7 +56,11 @@ def _text_hit(entity: dict, fields: list[str], query: str) -> bool:
 
 
 def _slim(e: dict, keep=("id", "title", "name", "status", "type", "purpose")) -> dict:
-    return {k: e[k] for k in keep if k in e}
+    """Headline projection. `visibility` and `date` always travel with it: every
+    tool result passes through `enforce_tier` on the way out (Rule 95, v0.7 §4.4
+    point 1), and a projection that dropped the tier first would serve a
+    restricted entity as internal."""
+    return {k: e[k] for k in (*keep, "date", "visibility") if k in e}
 
 
 TIER_ORDER = {"public": 0, "internal": 1, "restricted": 2, "confidential": 3}
@@ -224,6 +228,7 @@ class Catalog:
                 "purpose": g.get("purpose"),
                 "cadence": g.get("cadence"),
                 "members": g.get("members", []),
+                "visibility": g.get("visibility"),
             }
             for g in m.entities.get("gremien", [])
             if q in json.dumps(g, default=str).lower()
@@ -236,6 +241,8 @@ class Catalog:
                 "driver": d.get("driver"),
                 "approver": d.get("approver"),
                 "gremium": d.get("gremium"),
+                "date": d.get("date"),
+                "visibility": d.get("visibility"),
             }
             for d in m.entities.get("decisions", [])
             if _text_hit(d, ["title", "rationale", "scope"], topic)
