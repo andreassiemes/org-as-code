@@ -1,6 +1,7 @@
 # Org as Code
 
 [![spec](https://img.shields.io/badge/OPI%20spec-v0.7%20stable-2b5ea7)](VERSIONING.md)
+[![draft](https://img.shields.io/badge/OPI%20spec-v0.8%20public%20draft-7a5ea7)](https://github.com/andreassiemes/org-as-code/blob/v0.8-draft/spec/opi-v0.8.md)
 [![rules](https://img.shields.io/badge/validation%20rules-100-CB6120)](spec/opi-v0.7.md)
 [![license](https://img.shields.io/badge/license-MIT-6a6a72)](LICENSE)
 
@@ -188,6 +189,8 @@ Pre-built organizational templates with custom unit types:
 Templates use OPI's type inheritance (`components.types`) so you can define your organization's building blocks once and instantiate them consistently.
 
 ## Status
+
+**V0.8** (public draft on branch [`v0.8-draft`](https://github.com/andreassiemes/org-as-code/blob/v0.8-draft/spec/opi-v0.8.md) — [discussion open](https://github.com/andreassiemes/org-as-code/discussions/3)) — Effect and Legitimacy: `decisions[].enforcement` (did it take effect, as a separate dated fact) and `decisions[].approval` (quorum and consents), one composite `get_undelivered_decisions`, Rule 103 bounding catalog derivation, Rule 89 withdrawn. Rules 101–103, implemented on the branch. Backward-compatible with V0.7.
 
 **V0.7** (**stable**, tagged `v0.7.0` / `v0.7.1` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
 
