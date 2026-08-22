@@ -142,6 +142,11 @@ class Rule101(Outcome):
                                                           "expected_by": "2026-06-30"})]),
                                "expected by 2026-06-30")
 
+    def test_expected_by_on_the_as_of_day_is_silent(self):
+        # the overdue boundary is strict: expected_by == as-of raises nothing
+        self.assertSilent(run([decision(enforcement={"status": "pending",
+                                                     "expected_by": AS_OF.isoformat()})]), "Rule 101")
+
     def test_future_expected_by_is_silent(self):
         self.assertSilent(run([decision(enforcement={"status": "pending",
                                                      "expected_by": "2027-01-01"})]), "Rule 101")

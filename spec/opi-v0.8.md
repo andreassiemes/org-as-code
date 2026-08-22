@@ -100,9 +100,10 @@ concept across three scopes is better vocabulary than two words for it.
 **Two clocks, and which one may be self-written.** DD-9 requires an external anchor for
 self-reported values, and this block contains both kinds of value, so the distinction is
 stated once here and holds for the whole specification. An **observation** about one's own
-state — that an effect occurred, on which day, that a consent was given — needs a source
-outside the writing party; that is what `ref` is for, and why a date without one is
-self-report. An **expectation** about one's own future — `expected_by`, and likewise
+state — that an effect occurred, on which day, that a consent was given — needs an anchor in
+a system the document does not own (a commit, a ticket, minutes); that is what `ref` is for,
+and why a date without one is self-report. The anchor is outside the document, not necessarily
+outside the organisation. An **expectation** about one's own future — `expected_by`, and likewise
 `review_date` and `validate_by` from earlier versions — can only come from the organisation
 itself; nothing external could author it. What must lie outside the document for an
 expectation is not the bound but the **clock** it is judged by, which is why Rule 101's
@@ -179,11 +180,11 @@ decisions:
 
 | Key | Semantics |
 |---|---|
-| `status` | REQUIRED where `enforcement` is present. Enum: `pending` (effect expected, none observed yet), `in_effect` (a first effect happened and holds — this is T3), `lapsed` (an effect happened and no longer holds; the reversal of an effect that occurred). The enum is closed in v0.8; a later minor version may add a value, which v0.8 consumers treat as opaque (Rules 82–84) — that tolerance is granted to consumers and is not a licence for a producer to invent values. There is no `superseded` value: superseding changes the standing of the *decision*, never the fact that its effect did or did not occur |
+| `status` | REQUIRED where `enforcement` is present. Enum: `pending` (effect expected, none observed yet), `in_effect` (a first effect happened and holds — this is T3), `lapsed` (an effect happened and no longer holds; the reversal of an effect that occurred). The enum is closed for documents declaring opi 0.8.x: a v0.8 validator reports any other value as an ERROR (Rule 101). A later minor version that adds a value does so under its own version gate; a v0.8 validator that rejects such a document is conformant, not broken (§7). There is no `superseded` value: superseding changes the standing of the *decision*, never the fact that its effect did or did not occur |
 | `first_effect_at` | OPTIONAL date (`YYYY-MM-DD`). The first action that implemented the decision. REQUIRED when `status` is `in_effect` or `lapsed` — both assert that an effect occurred. MUST NOT be present when `status: pending`, and MUST NOT precede `decisions[].date`: an effect cannot precede its cause |
 | `lapsed_at` | OPTIONAL date (`YYYY-MM-DD`). The day the effect stopped holding. REQUIRED when `status: lapsed`, MUST NOT be present for `pending` or `in_effect`, and MUST NOT precede `first_effect_at`. Every other asserted fact in this block carries its day; a lapse without one would be the one exception, and it would make the relapse rate (§1.5) uncomputable |
 | `expected_by` | OPTIONAL date (`YYYY-MM-DD`). The date by which a first effect was expected — a declared expectation, not a promise the repository can keep. It becomes a finding only when a clock outside the document passes it (Rule 101). Where it is absent, no overdue finding is raised at all, and the coverage line counts the omission separately: an expectation OPI does not have is one it must not invent from another field |
-| `ref` | OPTIONAL string. External anchor for the asserted effect — a commit, pull request, ticket or minutes id. RECOMMENDED shape `<kind>:<value>`, the same shape as `approval.records[].ref` (§2). It is an **anchor, not a signature** (DD-6): nothing verifies it, but a date without one is self-report (DD-9) |
+| `ref` | OPTIONAL string. External anchor for the asserted effect — a commit, pull request, ticket or minutes id. RECOMMENDED shape `<kind>:<value>`, the same shape as `approval.records[].ref` (§2). It is an **anchor, not a signature** (DD-6): nothing verifies it, but a date without one is self-report (DD-9). MAY be present on `pending` (e.g. a ticket tracking the expected effect); no finding |
 
 `x-*` extension keys are permitted, as everywhere in OPI.
 
@@ -209,7 +210,8 @@ thing that keeps either omission from being the cheapest route to a clean report
 half is not decoration: a document whose every active decision carries
 `enforcement: {status: pending}` and no `expected_by` produces no finding at all and would
 otherwise report perfect coverage. The line is normative-adjacent on purpose — a note, never
-a finding.
+a finding. The validator SHOULD report approval coverage the same way (`approval: N/M active
+decisions carry a quorum`), see §7.
 
 ### 1.2 Which decisions expect an effect
 
@@ -233,7 +235,9 @@ record, which is exactly the point.
 If the effect itself was rolled back, set `status: lapsed`, **keep** `first_effect_at` and
 `ref`, and add `lapsed_at`. This is why the enum has a third value rather than two: the
 reversal is a second fact about the same event, not a reason to delete the first, and
-`pending` cannot carry the anchor. Each value therefore states exactly one dated fact — an
+`pending` asserts no effect the anchor could evidence. A `ref` MAY still be present on
+`pending` (e.g. a ticket tracking the expected effect); Rule 101 raises no finding for it.
+Each value therefore states exactly one dated fact — an
 effect is awaited, holds, or held and stopped. The case "never happened at all" is not a
 fourth value: it is `pending` with an `expected_by` that has passed, where Rule 101 already
 makes it visible and where no anchor exists that a validator could check.
@@ -425,12 +429,15 @@ an entity that is already served, and v0.7 §4.2 read literally could be taken a
 derive over them.
 
 **The catalog is a budget, and the budget is currently small.** Tool definitions are spent
-before the first user message (DD-13). Measured against the reference implementation at the
-current repository state, a real v0.7 document set yields 22 tools and roughly 5.1 kB of
-`tools/list` payload; the composite added in §3.2 is one definition of about 250 bytes, under
-five per cent. The tool count does not grow with the corpus — a four-hundred-decision
-organisation still yields the same catalog, with a payload of roughly 7.3 kB because
-`filter_*` descriptions enumerate the values they have seen. A per-key report of catalog size
+before the first user message (DD-13). Measured against the reference implementation on branch
+`v0.8-draft` (commit `7d23415`, 2026-08-22) over `examples/serve-demo/org.yaml` (4 units,
+2 gremien, 7 decisions, 1 agent), `Catalog.describe()` yields 23 tools and roughly 5.6 kB of
+`tools/list` payload (`json.dumps`, default separators); the composite added in §3.2 is one
+definition of about 520 bytes, roughly nine per cent of that catalog. The tool count is bounded
+by the entity table (`ENTITIES` in `orgspec/tools.py`) and does not grow with record count. The
+payload is not bounded that way: `filter_*` descriptions enumerate the known values of each
+tag field, so catalog size grows with the number of distinct tag values, not with record count;
+no cap on that enumeration is specified in v0.8. A per-key report of catalog size
 is deliberately **not** required here: it would need per-key catalogs, which no implementation
 has (per-key access enforcement, v0.7 §4.4 points 2–3, is unimplemented — only `--ceiling`
 exists), and a named tokenizer, which the specification does not name (§4.1).
@@ -445,7 +452,7 @@ surface from the tool catalog alone; no schema documents travel into prompts.
 | `who_decides(topic)` | "Who can decide this?" | resolves via units → gremien → decisions (driver/approver + mandate) |
 | `get_decision_chain(id)` | "How did we get here?" | traverses `revises`, `triggers`, `consequences`, `supersedes`, `conflicts_with` |
 | `get_agent_mandate(ref)` | "What may this AI agent decide, and where does it escalate?" | reads `agents[]` scope + `escalation_path` |
-| `get_undelivered_decisions(as_of?)` | "What did we decide and never carry?" | `status: active` ∧ `enforcement.status: pending` ∧ `expected_by` passed. MUST additionally return the enforcement coverage of the set it examined, in both halves — `N of M active decisions carry an enforcement block, K of N state an expectation` |
+| `get_undelivered_decisions(as_of?)` | "What did we decide and never carry?" | `status: active` ∧ `enforcement.status: pending` ∧ `expected_by` strictly before `as_of` (default: today). The result MUST carry `as_of`, `undelivered[]` with at least `id` and `expected_by` per hit, and `coverage` with the integers `active`, `with_enforcement`, `with_expected_by`; the sentence form is RECOMMENDED beside them, never instead. MUST additionally return the enforcement coverage of the set it examined, in both halves — `N of M active decisions carry an enforcement block, K of N state an expectation` |
 
 The new row exists for the reason given in §3.1: what v0.8 adds to `decisions[]` is nested, so
 nothing is derived over it, and the one question worth asking gets one composite instead of a
@@ -460,11 +467,12 @@ it may mean "nothing recorded" or "nothing dated". A result that cannot distingu
 outstanding" from "none observed" claims more than it knows, which is the failure this whole
 version exists to prevent (DD-7).
 
-**The coverage numbers are bounded by the requesting key.** `M` and `N` count only decisions
-the requesting key may see. They MUST NOT aggregate across a visibility boundary: a count
-that includes records the caller cannot read would disclose their existence and break v0.7
-§4.4 point 3 (absence over access-denied), which is the only access promise the
-specification makes. The validator's coverage line of §1.1 is a different number with the same
+**The coverage numbers are bounded by the requesting key.** `M` and `N` are counted over the
+tier-enforced view the result itself passes through (v0.7 §4.4 point 1). A decision redacted
+to a card carries neither `status` nor `enforcement` and is therefore neither active nor
+annotated for this count. They MUST NOT aggregate across a visibility boundary: a count that
+includes what the caller cannot read would say more than the served view does, against v0.7
+§4.4 point 3 (absence over access-denied), the only access promise the specification makes. The validator's coverage line of §1.1 is a different number with the same
 shape — a local run over a document set, with no key involved — and reports over everything it
 was given.
 
@@ -493,12 +501,13 @@ was ever specified, no schema construct, no example, and no line of the validato
 server touches one (v0.7 §1.4). The published text commits v0.8 to either specifying the
 syntax or withdrawing the rule. v0.8 withdraws it. *(Maintainer decision, 2026-08-01.)*
 
-**What is struck.** Rule 89's assertion is replaced by a withdrawal notice; the number is
-not reused. With it fall the two sentences that promise the feature: §1.1's "and on
-individual fields of `decisions[]` entries" and the field-level sentence in §1.2. §4.4
-point 3 is reworded from "fields above the key's tier" to "entities above the key's tier" —
-which is what the implementation enforces and all it ever could enforce. §1.4's gap
-paragraph is replaced by a one-line pointer to the withdrawal.
+**What is withdrawn.** Rule 89's assertion no longer applies; the number is not reused.
+The two sentences that promise the feature (v0.7 §1.1's "and on individual fields of
+`decisions[]` entries" and the field-level sentence in §1.2) and the word "fields" in §4.4
+point 3 ("fields above the key's tier") are to be read as "entities", which is what the
+implementation enforces and all it ever could enforce. The v0.7 text is left as published
+under the stability policy; each affected place (§1.1, §1.2, §1.4, §4.4) carries a pointer
+here, and the withdrawal is normative from this section.
 
 **Why withdraw rather than specify.** Three weeks of public draft produced no consumer and
 no request for field tiers; entity-level classification covers what every consumer —
@@ -580,8 +589,8 @@ Rule 102 from `decisions[].status`.
 Both document rules are **presence-gated**: they have no input where their field is absent, so
 the finding count of every existing document is unchanged at zero. Where a v0.8 field appears
 in a document declaring an earlier version, its presence is reported as a note, never as an
-error — the validator today narrows `decision_type` version-independently and thereby fails a
-valid v0.6 document, and new checks do not repeat that.
+error — the validator once narrowed `decision_type` version-independently and failed a valid
+v0.6 document (repaired in `c33280f`, see §6); new checks follow the repaired idiom.
 
 ### Rules 101–102: Decision Effect and Legitimacy
 
@@ -594,10 +603,11 @@ violation. `status: in_effect` and `status: lapsed` MUST each carry a `first_eff
 `in_effect` MUST NOT carry one. `first_effect_at`, `lapsed_at` and `expected_by` MUST be valid
 ISO 8601 dates (`YYYY-MM-DD`) where present; `first_effect_at` MUST NOT be earlier than the
 decision's `date`, and `lapsed_at` MUST NOT be earlier than `first_effect_at`. Once written,
-`first_effect_at`, `lapsed_at` and `ref` MUST NOT be removed or altered. — `in_effect` or
+`first_effect_at`, `lapsed_at` and `ref` MUST NOT be removed or altered — a producer obligation in the sense of Rule 92 (no silent edit), observable only in repository history; the validator raises no finding for it (§1.3). A history-aware tool MAY report a changed `first_effect_at`, `lapsed_at` or `ref`. — `in_effect` or
 `lapsed` without `ref` is a WARNING: an effect date without an external anchor is
 self-report. — A decision with `status: active` and `enforcement.status: pending` whose
-`expected_by` has passed relative to a timestamp outside the document is a WARNING. Where
+`expected_by` has passed relative to a timestamp outside the document is a WARNING — passed
+means strictly earlier than the as-of date; on the expected day itself no finding is raised. Where
 `expected_by` is absent, no overdue finding is raised; no other field substitutes for it. — An
 `active` decision with no `enforcement` block MUST NOT be flagged; absence asserts nothing
 (§1.1). Tooling SHOULD instead report enforcement coverage in both halves — blocks present,
@@ -702,7 +712,7 @@ anywhere. The gap is real and is left open on purpose.
 
 | Addition | Compatibility finding |
 |---|---|
-| `decisions[].enforcement` | New OPTIONAL nested object with five keys. `grep` over `spec/`, `examples/`, `tools/`, `orgspec/`: no `enforcement`, `first_effect_at`, `lapsed_at` or `expected_by` as a **key** anywhere. The word "enforcement" occurs only as prose in v0.7 §4.4 and in `orgspec/server.py` comments — resolved by renaming that section title, not the field (§3.3) |
+| `decisions[].enforcement` | New OPTIONAL nested object with five keys. `grep` over `spec/`, `examples/`, `tools/`, `orgspec/` before the patch (`main` at `c33280f`): no `enforcement`, `first_effect_at`, `lapsed_at` or `expected_by` as a **key** anywhere. The word "enforcement" occurs only as prose in v0.7 §4.4 and in `orgspec/server.py` comments — resolved by renaming that section title, not the field (§3.3) |
 | `decisions[].approval` | New OPTIONAL nested object. `quorum`/`by`/`at` are required only *inside* it. `$defs/Decision.required` (`id, date, gremium, title, driver, approver, status, rationale`) unchanged. `governance.change_process.approval[]` (v0.6) is a different subject and is untouched; the shared word `quorum` is deliberate (§2). A document that already keeps an `x-approval` now has two places for one statement — the usual price of consolidating an `x-` field, and the validator notes the co-presence (§7) |
 | Rule 103 | Binds implementations, exactly like Rules 95–98. No document can violate it; effect on `validate.py`: none. Stated as a prohibition, it is satisfied by the reference implementation on day one |
 
@@ -712,9 +722,9 @@ a document declaring `opi: "0.8.0"` fell out of the gate and its `status: hypoth
 reported as an **error** — in a version whose Rule 102 grades `hypothesis` explicitly and
 whose §1.2 exempts it from the overdue WARNING. That forward break is fixed on `main`
 (`c33280f`): a numeric `(major, minor)` comparison replaced the prefix test before any v0.8
-work began, so no validator-gate work item remains. What remains is the schema half: widening
-`properties.opi.pattern` to `^0\.[678]\.\d+$` in the new schema file — narrowly, so the v0.8
-schema does not silently start accepting v0.5 documents. That is a §7 work item with fixtures.
+work began, so no validator-gate work item remains. The schema half ships with this draft:
+`properties.opi.pattern` in `spec/opi-v0.8.schema.json` is `^0\.[678]\.\d+$`, widened narrowly so
+the v0.8 schema does not silently accept v0.5 documents (fixture in `tests/test_validate_v08.py`).
 
 **One genuine caveat: Rule 101 introduces a clock into the validator.** The same unchanged
 document can produce a warning tomorrow that it does not produce today. That is not an R1
@@ -816,7 +826,7 @@ serving-side test in the project and it needs no HTTP conformance harness.
 (ERROR), `lapsed_at` before `first_effect_at` (ERROR), `first_effect_at` before `date`
 (ERROR), `pending` with `first_effect_at` (ERROR), `in_effect` without `ref` (WARNING only),
 `active` + `pending` + past `expected_by` under a fixed `--as-of` (WARNING), the same with a
-future date (silent), `active` + `pending` with no `expected_by` and a stale `review_date`
+future date (silent), the same with `expected_by` equal to `--as-of` (silent — the boundary is strict), `active` + `pending` with no `expected_by` and a stale `review_date`
 (**silent — guards the removed fallback**), `hypothesis` + overdue (silent, §1.2),
 `superseded` + `in_effect` (silent, §1.3). Rule 102: `quorum: 3` with no `records[]` (WARNING,
 not ERROR — guards partial adoption), `quorum: 3` with two records on `active` (ERROR) and on
@@ -875,7 +885,7 @@ may land in either order, and `VERSION_PATTERN` already accepts `0.8.0`.
 | DD-8 | **A derivation never exceeds its source** | Applies to `ai:` ceilings (Rule 94), to agent mandates (Rule 99), and to any future authority-over-authority relation. Where a derived thing would need more than its origin, the model is wrong, not the ceiling |
 | DD-9 | **Self-reported values need an external anchor** | A time bound set by the party it constrains is not a bound. Anything an entity writes about its own rights, validity, or freshness MUST be evaluated against a timestamp outside its control |
 | DD-10 | **State maturity in three buckets, not as a roadmap** | Implemented / specified-but-unimplemented / opinion-without-text. Dates promise; buckets describe. A reader deciding whether to build against the spec needs the second, not the first |
-| DD-11 | **A rule fires only where the document can answer it** *(v0.7.0, wiederholt zur Lesbarkeit)* | Rule 99 checks the dimensions `components.roles` and the entity graph actually carry, and stays silent on the rest. A rule that demands information the schema does not hold is not strict — it is unimplementable, and an unimplementable ERROR trains readers to ignore the validator |
+| DD-11 | **A rule fires only where the document can answer it** *(v0.7.0, restated here for readability)* | Rule 99 checks the dimensions `components.roles` and the entity graph actually carry, and stays silent on the rest. A rule that demands information the schema does not hold is not strict — it is unimplementable, and an unimplementable ERROR trains readers to ignore the validator |
 | DD-12 | **First effect, not a workflow** | Effect is recorded as dated facts with one anchor, never as a process. A repository can observe that something became real; it cannot manage the becoming. Each enum value therefore states exactly one dated fact, one block carries one episode, and reminding is a tooling question, not a field (extends DD-5) |
 | DD-13 | **The catalog is a budget** | Tool definitions are spent before the first user message. A catalog that grows with the schema makes declaring an organisation more expensive than not declaring it. Derivation is therefore bounded by the instance and by nesting, stated as prohibitions so the bound is satisfiable before a conformance suite exists — and nested statements get named composites instead of derived families |
 | DD-14 | **A legitimacy record is checked against itself, not enforced** | Quorum and consents are written by the same hand, so no file-based check can see a quorum set too low. What a repository can check is whether a record contradicts its own claim, and whether a consent comes from outside the body that was entitled to give it. Declaring the narrower claim is what keeps the check honest and the field adoptable — the alternative is a rule that pretends to certify legitimacy and instead certifies its inflation (extends DD-6) |
