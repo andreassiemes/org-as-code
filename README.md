@@ -48,13 +48,10 @@ org-as-code/
 │   └── opi-v0.7.schema.json        #   JSON Schema (V0.7, backward-compatible)
 ├── examples/
 │   ├── governance/                 # Unit definitions
-│   │   ├── committee-structure.yaml
 │   │   ├── steering-committee.yaml #   Committee with DACI, schedule, interfaces
 │   │   └── delivery-lead-sync.yaml #   Meeting with facilitator, weekly cadence
-│   ├── flows/                      # Cross-unit decision flows
-│   │   ├── budget-approval.yaml    #   Decision flow with conditional routing
-│   │   └── escalation.yaml         #   Escalation path with time-based triggers
-│   └── okf-export/                 # Generated OKF v0.1 bundle (export projection)
+│   ├── okf-export/                 # Generated OKF v0.1 bundle (export projection)
+│   └── _legacy/                    # v0.1/v0.2 fragments, kept for history (fail modern validation)
 ├── templates/                      # Reusable org templates
 │   ├── consulting-firm.yaml        #   7 custom types for consulting orgs
 │   └── spotify-model.yaml          #   Squad, Tribe, Chapter, Guild types
