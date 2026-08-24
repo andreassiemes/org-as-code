@@ -15,7 +15,7 @@ the `opi:` field). This file states what a version label promises.
 | Version | Status | Scope |
 |---------|--------|-------|
 | **v0.8** | **draft** (branch `v0.8-draft`, public draft 2026-08-22) | Effect and Legitimacy: `decisions[].enforcement` (effect as a separate dated fact), `decisions[].approval` (quorum and consents), `get_undelivered_decisions` composite, bounded catalog derivation. Rules 101–103. Withdraws Rule 89 (field-level tiers; no syntax was ever specified). Stabilizes once a consumer maintains both blocks on real decisions. |
-| **v0.7** | **stable** (tagged `v0.7.1`, 2026-08-01) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile, agent mandate provenance. Rules 87–100. Published as a public draft 2026-07-09, stabilized after implementation feedback ([discussion](../../discussions/1)). `v0.7.1` closed the tier enforcement gap without changing any specification text. |
+| **v0.7** | **stable** (tagged `v0.7.2`, 2026-08-24) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile, agent mandate provenance. Rules 87–100. Published as a public draft 2026-07-09, stabilized after implementation feedback ([discussion](../../discussions/1)). `v0.7.1` closed the tier enforcement gap without changing any specification text. `v0.7.2` fixed the composite tools serving `restricted` entities in full below their tier (behaviour only, regression-tested). |
 | **v0.6** | **stable** (tagged `v0.6.0`, 2026-07-09) | OKF interoperability, knowledge graph, `log.md` provenance, permissive consumer model. Rules 1–86. |
 | v0.5 and older | superseded | Kept in `spec/` for reference; documents remain valid (see below). |
 
