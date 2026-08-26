@@ -20,6 +20,11 @@ Usage:
     tools/validate.py <org.yaml> [more.yaml ...] [--schema spec/opi-v0.6.schema.json]
     tools/validate.py org.yaml --schema auto     # default: pick schema by opi version
     tools/validate.py org.yaml --schema none     # structural checks only
+    tools/validate.py org.yaml --as-of 2026-06-30 # clock for Rule 101 (default: today)
+
+Severities (v0.8 §7): ✗ = ERROR (counts as failed, fails CI), ⚠ = WARNING (counted,
+never fails CI), · = note. The summary line is `N passed, M failed, K warnings`;
+the exit code depends on failures only.
 """
 
 from __future__ import annotations
@@ -53,6 +58,8 @@ DECISION_TYPE_ENUM = {"two-way", "one-way", "big-bet", "delegated"}
 VISIBILITY_ENUM = {"public", "internal", "restricted", "confidential"}
 REOPEN_ENTRY = re.compile(r"^\d{4}-\d{2}-\d{2}\s*[—-]\s*\S.*")
 ROLE_REQUIRED = ["title", "purpose", "accountabilities"]
+# v0.8 additions (spec/opi-v0.8.md)
+ENFORCEMENT_STATUS_ENUM = {"pending", "in_effect", "lapsed"}
 
 MAX_SCHEMA_ERRORS = 10  # keep the report readable on badly broken files
 
@@ -67,6 +74,7 @@ class Report:
         self.lines: list[str] = []
         self.failed = 0
         self.passed = 0
+        self.warned = 0
         try:
             self.source = path.read_text(encoding="utf-8").splitlines()
         except OSError:
@@ -80,6 +88,12 @@ class Report:
         self.failed += 1
         hint = self.line_hint(needle) if needle else ""
         self.lines.append(f"  ✗ {msg}{hint}")
+
+    def warn(self, msg: str, needle: str | None = None) -> None:
+        """WARNING: counted and printed, never fails the run (v0.8 §5, §7)."""
+        self.warned += 1
+        hint = self.line_hint(needle) if needle else ""
+        self.lines.append(f"  ⚠ {msg}{hint}")
 
     def note(self, msg: str) -> None:
         self.lines.append(f"  · {msg}")
@@ -96,7 +110,7 @@ class Report:
         for line in self.lines:
             print(line)
         verdict = "PASS" if self.failed == 0 else "FAIL"
-        print(f"  {verdict}: {self.passed} passed, {self.failed} failed")
+        print(f"  {verdict}: {self.passed} passed, {self.failed} failed, {self.warned} warnings")
 
 
 # --------------------------------------------------------------------------- helpers
@@ -138,6 +152,20 @@ def is_iso_date(value) -> bool:
         return True
     except ValueError:
         return False
+
+
+def to_date(value):
+    """PyYAML parses unquoted dates to datetime.date and quoted ones stay str;
+    compare through this, never as raw values of mixed type (v0.8 §7)."""
+    import datetime
+    if isinstance(value, datetime.datetime):
+        return value.date()
+    if isinstance(value, datetime.date):
+        return value
+    try:
+        return datetime.date.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
 
 
 def is_local_ref(ref) -> bool:
@@ -184,7 +212,137 @@ def version_at_least(version, floor: tuple[int, int]) -> bool:
         return False
 
 
-def check_structure(report: Report, doc: dict) -> None:
+def check_enforcement(report: Report, label: str, d: dict, as_of, dfail) -> None:
+    """Rule 101: effect is recorded, never assumed (spec/opi-v0.8.md §1, §5)."""
+    enf = d.get("enforcement")
+    if not isinstance(enf, dict) or not enf.get("status"):
+        dfail(f"{label}: enforcement present without status — an empty block asserts "
+              f"nothing and still counts as coverage (Rule 101)",
+              needle="enforcement")
+        return
+    st = enf["status"]
+    if st not in ENFORCEMENT_STATUS_ENUM:
+        dfail(f"{label}: enforcement.status '{st}' not in {sorted(ENFORCEMENT_STATUS_ENUM)} "
+              f"(Rule 101)", needle=str(st))
+        return
+    dates = {}
+    for key in ("first_effect_at", "lapsed_at", "expected_by"):
+        if key in enf:
+            if not is_iso_date(enf[key]):
+                dfail(f"{label}: enforcement.{key} '{enf[key]}' is not a valid ISO 8601 date "
+                      f"(Rule 101)", needle=str(enf[key]))
+            else:
+                dates[key] = to_date(enf[key])
+    # presence contract per status value: each value states exactly one dated fact
+    if st == "pending":
+        for key in ("first_effect_at", "lapsed_at"):
+            if key in enf:
+                dfail(f"{label}: enforcement pending must not carry {key} (Rule 101)",
+                      needle=key)
+    else:  # in_effect / lapsed assert that an effect occurred
+        if "first_effect_at" not in enf:
+            dfail(f"{label}: enforcement {st} requires first_effect_at (Rule 101)",
+                  needle=str(st))
+        if st == "in_effect" and "lapsed_at" in enf:
+            dfail(f"{label}: enforcement in_effect must not carry lapsed_at (Rule 101)",
+                  needle="lapsed_at")
+        if st == "lapsed" and "lapsed_at" not in enf:
+            dfail(f"{label}: enforcement lapsed requires lapsed_at (Rule 101)",
+                  needle=str(st))
+        if not enf.get("ref"):
+            report.warn(f"{label}: enforcement {st} without ref — an effect date without an "
+                        f"external anchor is self-report (Rule 101, DD-9)", needle=str(st))
+    # order of facts: an effect cannot precede its cause, a lapse cannot precede its effect
+    decided = to_date(d.get("date"))
+    fea, lap = dates.get("first_effect_at"), dates.get("lapsed_at")
+    if fea and decided and fea < decided:
+        dfail(f"{label}: enforcement.first_effect_at {fea} precedes the decision date "
+              f"{decided} (Rule 101)", needle=str(enf.get("first_effect_at")))
+    if fea and lap and lap < fea:
+        dfail(f"{label}: enforcement.lapsed_at {lap} precedes first_effect_at {fea} "
+              f"(Rule 101)", needle=str(enf.get("lapsed_at")))
+    # overdue: only active + pending, only on expected_by, judged by the clock outside
+    exp = dates.get("expected_by")
+    if st == "pending" and d.get("status") == "active" and exp and exp < as_of:
+        report.warn(f"{label}: decided {decided}, effect expected by {exp}, none recorded "
+                    f"as of {as_of} (Rule 101)", needle=str(enf.get("expected_by")))
+
+
+def check_approval(report: Report, label: str, d: dict, roles: dict, gremien: list,
+                   dfail) -> None:
+    """Rule 102: a recorded quorum must be met (spec/opi-v0.8.md §2, §5)."""
+    ap = d.get("approval")
+    if not isinstance(ap, dict):
+        dfail(f"{label}: approval must be a mapping (Rule 102)", needle="approval")
+        return
+    quorum = ap.get("quorum")
+    if not isinstance(quorum, int) or isinstance(quorum, bool) or quorum < 1:
+        dfail(f"{label}: approval.quorum must be an integer >= 1 (got {quorum!r}) (Rule 102)",
+              needle="quorum")
+        return
+    if "records" not in ap:
+        report.warn(f"{label}: quorum {quorum} declared, no consents recorded (Rule 102)",
+                    needle="quorum")
+        return
+    records = as_list(ap.get("records"))
+    structure_ok = True
+    for j, r in enumerate(records):
+        r = as_dict(r)
+        if not r.get("by") or not isinstance(r.get("by"), str):
+            structure_ok = False
+            dfail(f"{label}: approval.records[{j}] without by (Rule 102)", needle="records")
+        if not is_iso_date(r.get("at")):
+            structure_ok = False
+            dfail(f"{label}: approval.records[{j}].at '{r.get('at')}' is not a valid "
+                  f"ISO 8601 date (Rule 102)", needle=str(r.get("at") or "records"))
+    if not structure_ok:
+        return
+    status = d.get("status")
+    distinct = {as_dict(r)["by"] for r in records}
+    if len(distinct) < quorum:
+        msg = (f"{label}: quorum {quorum} declared, {len(distinct)} distinct consent(s) "
+               f"recorded (Rule 102)")
+        if status == "active":
+            dfail(msg + " — a decision in force without the legitimacy it claims",
+                  needle="quorum")
+        elif status in ("planned", "hypothesis"):
+            report.warn(msg, needle="quorum")
+        # revoked / superseded / unknown status: no finding (honest history)
+    # entitlement: only where both sides resolve to declared roles
+    gremium = next((as_dict(g) for g in gremien if as_dict(g).get("id") == d.get("gremium")),
+                   None)
+    members = as_list(gremium.get("members")) if gremium else []
+    role_members = {m for m in members if isinstance(m, str) and m in roles}
+    if role_members:
+        for by in sorted(distinct):
+            if by in roles and by not in role_members:
+                report.warn(f"{label}: consent by '{by}' is outside the declared membership "
+                            f"of gremium '{d.get('gremium')}' (Rule 102)", needle=str(by))
+    if status == "active":
+        for j, r in enumerate(records):
+            if not as_dict(r).get("ref"):
+                report.warn(f"{label}: approval.records[{j}] ('{as_dict(r).get('by')}') "
+                            f"without ref — a consent date without an anchor is self-report "
+                            f"(Rule 102, DD-9)", needle=str(as_dict(r).get("by")))
+
+
+def report_coverage(report: Report, decisions: list) -> None:
+    """Coverage lines (v0.8 §1.1, §7): notes, never findings — the only
+    counter-pressure against leaving the optional blocks out."""
+    active = [as_dict(d) for d in decisions if as_dict(d).get("status") == "active"]
+    if not active:
+        return
+    with_block = [d for d in active if isinstance(d.get("enforcement"), dict)]
+    with_expect = [d for d in with_block if d["enforcement"].get("expected_by")]
+    report.note(f"enforcement: {len(with_block)}/{len(active)} active decisions carry a block, "
+                f"{len(with_expect)}/{len(with_block)} of those state an expectation")
+    with_approval = [d for d in active if isinstance(d.get("approval"), dict)]
+    report.note(f"approval: {len(with_approval)}/{len(active)} active decisions carry a quorum")
+
+
+def check_structure(report: Report, doc: dict, as_of=None) -> None:
+    import datetime
+    as_of = as_of or datetime.date.today()
     # -- opi version
     version = doc.get("opi")
     if isinstance(version, str) and VERSION_PATTERN.match(version):
@@ -192,6 +350,7 @@ def check_structure(report: Report, doc: dict) -> None:
     else:
         report.fail(f"opi: missing or not a semver string (got {version!r})", needle="opi")
     v07 = version_at_least(version, (0, 7))
+    v08 = version_at_least(version, (0, 8))
 
     # -- unit identity
     unit = as_dict(doc.get("unit"))
@@ -307,7 +466,7 @@ def check_structure(report: Report, doc: dict) -> None:
             dfail(f"{label}: decision_type '{d['decision_type']}' not in {sorted(DECISION_TYPE_ENUM)}",
                   needle=str(d["decision_type"]))
         if v07 and d.get("decision_type") in ("one-way", "big-bet") and not d.get("rationale"):  # Rule 90 WARN
-            report.note(f"⚠ {label}: {d['decision_type']} decision without rationale (Rule 90)")
+            report.warn(f"{label}: {d['decision_type']} decision without rationale (Rule 90)")
         if status == "hypothesis" and (not d.get("validate") or not d.get("validate_by")):  # Rule 91
             dfail(f"{label}: hypothesis without validate + validate_by (Rule 91)",
                   needle=str(d.get("id") or ""))
@@ -324,6 +483,22 @@ def check_structure(report: Report, doc: dict) -> None:
         if d.get("gremium") and gremien and d["gremium"] not in gremium_ids:
             dfail(f"{label}: gremium '{d['gremium']}' not found in gremien[]",
                   needle=str(d["gremium"]))
+        # -- v0.8 Decision Effect and Legitimacy (Rules 101-102). Presence-gated; in a
+        # document declaring < 0.8 the block is noted, never judged (v0.8 §5, §6).
+        if "enforcement" in d or "approval" in d:
+            if not v08:
+                report.note(f"{label}: carries v0.8 key(s) "
+                            f"{[k for k in ('enforcement', 'approval') if k in d]} "
+                            f"under opi {version} — not checked (Rules 101-102 need opi >= 0.8)")
+            else:
+                if "enforcement" in d:
+                    check_enforcement(report, label, d, as_of, dfail)
+                if "approval" in d:
+                    check_approval(report, label, d, roles, gremien, dfail)
+        for xk, k in (("x-enforcement", "enforcement"), ("x-approval", "approval")):
+            if xk in d and k in d:
+                report.note(f"{label}: both '{xk}' and '{k}' present — the adopted key is "
+                            f"authoritative, the x- field is now double maintenance")
     # decision graph edges must stay inside the document (spec v0.5 rules 63-65)
     for i, d in enumerate(decisions):
         d = as_dict(d)
@@ -339,6 +514,8 @@ def check_structure(report: Report, doc: dict) -> None:
     if decisions and decisions_ok:
         report.ok(f"decisions: {len(decisions)} decision(s) with required fields, "
                   f"valid status, resolvable gremium and graph edges")
+    if v08 and decisions:
+        report_coverage(report, decisions)
 
     # -- agents[] -> components.agents / gremien
     agent_types = as_dict(as_dict(doc.get("components")).get("agents"))
@@ -503,7 +680,7 @@ def check_schema(report: Report, doc: dict, schema_path: Path) -> None:
 
 # --------------------------------------------------------------------------- main
 
-def validate_file(path: Path, schema_arg: str) -> bool:
+def validate_file(path: Path, schema_arg: str, as_of=None) -> bool:
     report = Report(path)
     try:
         doc = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -525,7 +702,7 @@ def validate_file(path: Path, schema_arg: str) -> bool:
         return False
     report.ok("parses as a YAML mapping")
 
-    check_structure(report, doc)
+    check_structure(report, doc, as_of=as_of)
     schema_path = resolve_schema(doc, schema_arg, report)
     if schema_path:
         check_schema(report, doc, schema_path)
@@ -540,7 +717,20 @@ def main() -> int:
     ap.add_argument("--schema", default="auto",
                     help="JSON Schema path, 'auto' (default: match spec/opi-v<version>."
                          "schema.json to the document's opi version), or 'none'")
+    ap.add_argument("--as-of", default=None, metavar="YYYY-MM-DD",
+                    help="clock for time-bound findings (Rule 101 overdue); default: today. "
+                         "Fix it in fixtures so a report is reproducible")
     args = ap.parse_args()
+
+    import datetime
+    if args.as_of:
+        try:
+            as_of = datetime.date.fromisoformat(args.as_of)
+        except ValueError:
+            print(f"error: --as-of {args.as_of!r} is not a YYYY-MM-DD date", file=sys.stderr)
+            return 2
+    else:
+        as_of = datetime.date.today()
 
     if yaml is None:
         print("error: PyYAML is required to validate OPI documents.\n"
@@ -549,12 +739,13 @@ def main() -> int:
               "a guessing validator is worse than none.)", file=sys.stderr)
         return 2
 
+    print(f"validate.py — as-of {as_of.isoformat()} (Rule 101 clock)")
     failed = 0
     for path in args.files:
         if not path.is_file():
             print(f"error: {path}: no such file", file=sys.stderr)
             return 2
-        if not validate_file(path, args.schema):
+        if not validate_file(path, args.schema, as_of=as_of):
             failed += 1
 
     total = len(args.files)

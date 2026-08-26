@@ -140,6 +140,7 @@ semantics, not a patch.
 Rule 89 therefore stands unimplementable until v0.8 resolves it in one of two ways:
 by specifying the syntax, or by withdrawing the rule and the two sentences that promise
 it. Until then, treat field-level classification as absent: classify the whole decision.
+*(Resolved in the v0.8 draft: withdrawn — see [opi-v0.8.md §3.4](opi-v0.8.md).)*
 
 **Consequence for adopters.** Entity tiers are enforced end to end — declaration,
 validation, serving. Field tiers are not, because they cannot be written down.
@@ -408,6 +409,9 @@ entity's tier.
 tier is specified anywhere in v0.7 — see §1.4. The rule is kept in place, unenforced,
 rather than silently dropped; v0.8 either specifies the syntax or withdraws it together
 with the two sentences in §1.1 and §1.2 that promise the feature.
+**Resolution (v0.8 draft, 2026-08-22): withdrawn.** See [spec/opi-v0.8.md §3.4](opi-v0.8.md).
+The number is not reused; this v0.7 text is left as published (stability policy) and the
+withdrawal, with its consequential strikes in §1.1, §1.2, §1.4 and §4.4, is declared there.
 
 ### Rules 90–93: Decision Lifecycle
 

@@ -9,7 +9,14 @@ shapes exactly as the Serving Profile specifies:
     text     -> search_<entity>_by_text   (one tool per entity, pooled fields)
     relation -> traversal tools
 
-Composite tools (§4.3, SHOULD): who_decides, get_decision_chain, get_agent_mandate.
+Composite tools (§4.3, SHOULD): who_decides, get_decision_chain, get_agent_mandate,
+and since v0.8 get_undelivered_decisions (spec/opi-v0.8.md §3.2).
+
+Rule 103 (v0.8): derivation is bounded by the instance (a field no served document
+populates yields no tool) and by nesting (nested lists and objects such as
+`decisions[].enforcement` and `approval.records[]` travel with their record and
+derive no tools of their own). Both bounds are structural here: only the fields in
+ENTITIES are ever considered, and only when at least one record carries them.
 """
 
 from __future__ import annotations
@@ -70,10 +77,11 @@ class Envelope(dict):
     entities that were each classified on their own.
 
     Without this distinction the default swallows the wrapper whole: served to a
-    `public` key, an unmarked `{"root": …, "nodes": […], "edges": […]}` is read
-    as an internal entity above the ceiling and redacted to the fields of
-    REDACTED_KEEP, none of which a wrapper has — so the composite returns `{}`
-    and an empty answer becomes indistinguishable from "nothing found".
+    `public` key, an unmarked `{"as_of": …, "undelivered": […], "coverage": {…}}`
+    is read as an internal entity above the ceiling and redacted to the fields of
+    REDACTED_KEEP, none of which a wrapper has — so every composite returns `{}`
+    and an empty answer becomes indistinguishable from "nothing open". That is
+    the reading v0.8 §3.2 forbids in its own tool description.
 
     Marking the wrapper keeps the single gate of `Catalog.call` intact: the
     contents still pass through `enforce_tier` entity by entity, and a redacted
@@ -109,13 +117,14 @@ def enforce_tier(value, ceiling: int, _inherited: bool = False):
     from one that does not exist.
 
     `_inherited` marks the contents of an entity that has already cleared the
-    ceiling. Nested lists and objects such as `agents[].scope` *travel with
-    their record* — they are parts of it, not entities in their own right, and
-    they carry no tier of their own. Classifying them independently would apply
+    ceiling. Rule 103 (v0.8): nested lists and objects such as
+    `decisions[].enforcement` and `approval.records[]` *travel with their
+    record* — they are parts of it, not entities in their own right, and they
+    carry no tier of their own. Classifying them independently would apply
     §1.2's entity default ("absent means internal") to a sub-object that was
-    never classified, and strip `scope` out of a record the caller is entitled
-    to read in full. The tier decision belongs to the record; once it is made,
-    it holds for everything inside it.
+    never classified, and strip `enforcement`, `approval` and `scope` out of a
+    decision the caller is entitled to read in full. The tier decision belongs
+    to the record; once it is made, it holds for everything inside it.
     """
     if isinstance(value, list):
         out = [enforce_tier(v, ceiling, _inherited) for v in value]
@@ -124,12 +133,12 @@ def enforce_tier(value, ceiling: int, _inherited: bool = False):
         # A wrapper is not an entity and has no tier of its own: recurse into its
         # contents, never classify the wrapper. See Envelope's docstring.
         #
-        # Inside a wrapper, a *list* holds entities (`nodes[]`, `bodies[]`,
-        # `precedents[]`) and each item is classified on its own. A plain
-        # *object* is a part of the answer, not an entity — `scope` — and is no
-        # more classifiable than the wrapper around it. No composite returns a
-        # bare entity as an object-valued key; where one would, it enforces the
-        # entity's tier itself before wrapping.
+        # Inside a wrapper, a *list* holds entities (`undelivered[]`, `nodes[]`,
+        # `bodies[]`, `precedents[]`) and each item is classified on its own. A
+        # plain *object* is a part of the answer, not an entity — `coverage`,
+        # `scope` — and is no more classifiable than the wrapper around it. No
+        # composite returns a bare entity as an object-valued key; where one
+        # would, it enforces the entity's tier itself before wrapping.
         return Envelope({
             k: enforce_tier(v, ceiling, _inherited=isinstance(v, dict))
             for k, v in value.items()
@@ -137,7 +146,7 @@ def enforce_tier(value, ceiling: int, _inherited: bool = False):
     if not isinstance(value, dict):
         return value
     if _inherited:
-        # Part of a record that already cleared the ceiling.
+        # Part of a record that already cleared the ceiling (Rule 103).
         return value
     tier = tier_of(value)
     if tier >= TIER_ORDER["confidential"]:
@@ -157,13 +166,13 @@ class Catalog:
         self._build()
 
     # -- catalog construction -------------------------------------------------
-    def _add(self, name: str, description: str, params: dict, fn):
+    def _add(self, name: str, description: str, params: dict, fn, required=None):
         self.tools[name] = {
             "description": description,
             "inputSchema": {
                 "type": "object",
                 "properties": params,
-                "required": list(params.keys()),
+                "required": list(params.keys()) if required is None else list(required),
             },
             "fn": fn,
         }
@@ -239,6 +248,20 @@ class Catalog:
                 "supersedes/superseded_by, triggers, consequences, conflicts_with.",
                 {"id": {"type": "string"}},
                 self._decision_chain,
+            )
+        if m.entities.get("decisions"):
+            self._add(
+                "get_undelivered_decisions",
+                "What did we decide and never carry? Active decisions whose enforcement "
+                "is pending and whose expected_by has passed as of the given date "
+                "(default: today). Always returns the enforcement coverage of the set it "
+                "examined, so an empty answer cannot be read as 'nothing open' "
+                "(v0.8 §3.2).",
+                {"as_of": {"type": "string",
+                           "description": "YYYY-MM-DD clock to judge expected_by against; "
+                                          "default: today"}},
+                self._undelivered_decisions,
+                required=[],
             )
         if m.entities.get("agents"):
             self._add(
@@ -321,6 +344,59 @@ class Catalog:
             for n in sorted(seen)
         ]
         return Envelope({"root": id, "nodes": nodes, "edges": edges})
+
+    def _undelivered_decisions(self, as_of: str | None = None):
+        import datetime
+
+        def to_date(v):
+            if isinstance(v, datetime.datetime):
+                return v.date()
+            if isinstance(v, datetime.date):
+                return v
+            try:
+                return datetime.date.fromisoformat(str(v))
+            except (TypeError, ValueError):
+                return None
+
+        clock = to_date(as_of) if as_of else datetime.date.today()
+        if clock is None:
+            return Envelope({"error": f"as_of {as_of!r} is not a YYYY-MM-DD date"})
+        # Coverage is bounded to what the requesting key may see (§3.2): count over the
+        # same tier-enforced view the result itself passes through, so a redacted card
+        # (no `status`) is neither "active" nor "annotated" here.
+        visible = enforce_tier(list(self.model.entities.get("decisions", [])), self.ceiling)
+        active = [d for d in visible if isinstance(d, dict) and d.get("status") == "active"]
+        with_block = [d for d in active if isinstance(d.get("enforcement"), dict)]
+        with_expect = [d for d in with_block if d["enforcement"].get("expected_by")]
+        hits = []
+        for d in with_expect:
+            enf = d["enforcement"]
+            exp = to_date(enf.get("expected_by"))
+            if enf.get("status") == "pending" and exp and exp < clock:
+                hits.append({
+                    "id": d.get("id"), "title": d.get("title"), "date": d.get("date"),
+                    "gremium": d.get("gremium"), "driver": d.get("driver"),
+                    "expected_by": enf.get("expected_by"),
+                    "overdue_days": (clock - exp).days,
+                    # The tier travels with the projection, for the reason _slim
+                    # states: this list is classified again on the way out, and a
+                    # hit that dropped its tier first would be re-read as internal
+                    # and redacted down to a bare id — turning a named overdue
+                    # decision into an anonymous one for every public caller.
+                    "visibility": d.get("visibility"),
+                })
+        return Envelope({
+            "as_of": clock.isoformat(),
+            "undelivered": hits,
+            "coverage": {
+                "active": len(active),
+                "with_enforcement": len(with_block),
+                "with_expected_by": len(with_expect),
+                "line": (f"{len(with_block)} of {len(active)} active decisions carry an "
+                         f"enforcement block, {len(with_expect)} of {len(with_block)} state "
+                         f"an expectation"),
+            },
+        })
 
     def _agent_mandate(self, ref: str):
         for a in self.model.entities.get("agents", []):

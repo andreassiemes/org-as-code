@@ -1,0 +1,21 @@
+# Fixture runner for the reference implementation (tests/). Separate from
+# validate.yml on purpose: that file is the copy-paste template for adopters'
+# repositories and must stay a single validate.py call.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml jsonschema
+      - run: python3 -m unittest discover -v tests
+      # the two regression anchors of spec/opi-v0.8.md §7, under a fixed clock
+      - run: python3 tools/validate.py examples/okf-export/source/opi.yaml examples/serve-demo/org.yaml --as-of 2026-08-22

@@ -25,7 +25,13 @@ def _cmd_validate(args) -> int:
     else:
         targets = [str(root)]
     if repo_validator.exists():
-        return subprocess.call([sys.executable, str(repo_validator), *targets])
+        # v0.8 §7: flags pass through, or the `--as-of` promise is unkeepable via the CLI
+        flags = []
+        if args.as_of:
+            flags += ["--as-of", args.as_of]
+        if args.schema:
+            flags += ["--schema", args.schema]
+        return subprocess.call([sys.executable, str(repo_validator), *targets, *flags])
     # fallback: structural load only
     try:
         model = load(args.path)
@@ -56,6 +62,9 @@ def main(argv=None) -> int:
 
     v = sub.add_parser("validate", help="validate OPI documents (file or repo dir)")
     v.add_argument("path")
+    v.add_argument("--as-of", metavar="YYYY-MM-DD",
+                   help="clock for time-bound findings (Rule 101); default: today")
+    v.add_argument("--schema", help="JSON Schema path, 'auto' (default) or 'none'")
     v.set_defaults(fn=_cmd_validate)
 
     s = sub.add_parser("serve", help="serve an OPI repo as an MCP context endpoint")

@@ -4,6 +4,7 @@ Reference CLI for the OPI spec. Two commands in this MVP:
 
 ```bash
 python3 -m orgspec validate <org.yaml | repo-dir>   # delegates to tools/validate.py
+python3 -m orgspec validate <path> --as-of 2026-06-30  # fixed clock for Rule 101 (v0.8)
 python3 -m orgspec serve <repo-dir> [--watch] [--key K] [--port 8484]
 ```
 
@@ -25,7 +26,11 @@ python3 -m orgspec serve examples/serve-demo --watch
   description, `search_*_by_text`, relation traversals). 5 entities in the demo org
   yield ~22 tools; nothing is hand-curated per deployment.
 - **Composite tools (§4.3, SHOULD):** `who_decides(topic)`,
-  `get_decision_chain(id)`, `get_agent_mandate(ref)`.
+  `get_decision_chain(id)`, `get_agent_mandate(ref)`, and since the v0.8 draft
+  `get_undelivered_decisions(as_of?)` — "what did we decide and never carry?",
+  always with the enforcement coverage of the set it examined, bounded to what the
+  key may see (spec/opi-v0.8.md §3.2). The v0.8 blocks `decisions[].enforcement`
+  and `decisions[].approval` derive no tools of their own (Rule 103).
 - **Enforcement (§4.4):** `X-API-Key` checked server-side; tools accept no
   caller-identity parameters. MVP ships ONE key without visibility tiers — tier
   enforcement lands with the v0.7 schema.
