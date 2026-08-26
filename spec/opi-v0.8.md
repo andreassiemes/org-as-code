@@ -59,11 +59,12 @@ absence countable.
 | Bucket | What it covers |
 |---|---|
 | ✅ **Implemented in the reference implementation** | **Rules 101 and 102** in `tools/validate.py` (with the warning severity and `--as-of` clock of §7), the **v0.8 JSON Schema** (`spec/opi-v0.8.schema.json`, additive on v0.7), **`get_undelivered_decisions`** in `orgspec serve` with key-bounded coverage (§3.2), and **Rule 103 in full** — the server derives no tool from a field no served document populates and nothing over nested lists and objects, which is what §3.1 needs so that v0.7 §4.2 can no longer be read as licence to serve the whole schema. `examples/serve-demo/org.yaml` carries both blocks; the fixtures of §7 run under `tests/` |
-| 🚧 **Specified, pending a consumer** | **Stabilization.** Every rule of this version runs, but none has been maintained by an organisation on real decisions over time. Under the stability policy the draft becomes stable only after a consumer keeps `enforcement` and `approval` current and the relapse/latency numbers of §1.5 have been computed at least once outside the demo |
+| 🚧 **Open, not blocking** | **Use over time.** Every rule of this version runs, and the specification text is settled. What is still missing is longevity: no organisation has kept `enforcement` and `approval` current across a year of decisions. That is a gap in evidence, not in the specification, and under this project's stability policy it does not hold a version back — a stable label promises that the text stops moving, not that the world has caught up with it (see [VERSIONING.md](../VERSIONING.md), *Note on enforcement*). Of the two numbers in §1.5, effect latency is computable today on `examples/org-as-code-self`; relapse rate is not, because no decision there has lapsed yet |
 
 v0.8 is the first version since v0.6 that ships with its rules implemented on the day the
 draft is published: nothing in it waits for git access, visibility tiers or a conformance
-suite. What it still waits for is use — which is what the draft label is for. The Rule 89
+suite. What it still waits for is use — and use is what a specification earns after it
+settles, not a condition it must satisfy before. The Rule 89
 withdrawal (§3.4) has no implementation dimension: it strikes text whose subject could
 never be written down.
 
