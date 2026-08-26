@@ -1,10 +1,15 @@
-# OPI Specification v0.8 — Draft (Addendum): Effect and Legitimacy
+# OPI Specification v0.8 (Addendum): Effect and Legitimacy
 
-**Status:** DRAFT — public draft on branch `v0.8-draft`. Under the project's stability
-policy ([VERSIONING.md](../VERSIONING.md)) fields, rules and semantics may still change based
-on implementation feedback; there is no formal RFC round (see §8, DD-1). The version
-stabilizes once a consumer maintains `enforcement` and `approval` on real decisions and the
-reference implementation has run against it.
+**Status:** STABLE — tagged `v0.8.0`, 2026-08-26. Published as a public draft on
+2026-08-22 and stabilized after the reference implementation ran against it. Under the
+project's stability policy ([VERSIONING.md](../VERSIONING.md)) the text, schema and rules
+of this minor version do not change anymore; fixes ship as PATCH. There was no formal RFC
+round (see §8, DD-1).
+
+What a stable label does *not* claim here is stated in Maturity below: no organisation has
+kept `enforcement` and `approval` current across a year of decisions yet. That is an
+evidence gap, not a specification gap, and this project's policy does not let it hold a
+version back.
 
 **Baseline:** OPI v0.6 (rules 1–86) plus OPI v0.7 (rules 87–100, including Agent Mandate
 Provenance) — **stable since 2026-08-01**, released as `v0.7.0`/`v0.7.1`. Everything in this
