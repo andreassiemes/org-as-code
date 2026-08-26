@@ -176,8 +176,7 @@ The specification defines 15+ sections for modeling organizational units, plus o
 
 **Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
 
-→ Current stable: [`spec/opi-v0.7.md`](spec/opi-v0.7.md) (tagged `v0.7.1`) · Public draft: [`spec/opi-v0.8.md`](spec/opi-v0.8.md) | JSON Schemas: [V0.8](spec/opi-v0.8.schema.json) · [V0.7](spec/opi-v0.7.schema.json) · [V0.6](spec/opi-v0.6.schema.json) · [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json) | Stability policy: [VERSIONING.md](VERSIONING.md)
-
+→ Current stable: [`spec/opi-v0.7.md`](spec/opi-v0.7.md) (tagged `v0.7.3`) · Public draft: [`spec/opi-v0.8.md`](spec/opi-v0.8.md) | JSON Schemas: [V0.8](spec/opi-v0.8.schema.json) · [V0.7](spec/opi-v0.7.schema.json) · [V0.6](spec/opi-v0.6.schema.json) · [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json) | Stability policy: [VERSIONING.md](VERSIONING.md)
 ## Templates
 
 Pre-built organizational templates with custom unit types:
@@ -191,7 +190,7 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 **V0.8** (public draft on branch `v0.8-draft` — [discussion open](../../discussions)) — Effect and Legitimacy: a decision record that never claims more than it knows. `decisions[].enforcement` records *whether a decision took effect* as a separate dated fact with an external anchor (`pending` / `in_effect` / `lapsed`, `first_effect_at`, `expected_by`); `decisions[].approval` records *how many consents it needed and which exist* (`quorum`, `records[]`). One composite, `get_undelivered_decisions`, asks "what did we decide and never carry?" with the coverage of what it examined. Rule 103 bounds catalog derivation; Rule 89 (field-level tiers) withdrawn. Validation Rules 101–103, implemented in `tools/validate.py` with a warning severity and `--as-of`, fixtures under `tests/`. Backward-compatible with V0.7.
 
-**V0.7** (**stable**, tagged `v0.7.2` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
+**V0.7** (**stable**, tagged `v0.7.3` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
 
 **V0.6** (**stable**, tagged `v0.6.0` — see [VERSIONING.md](VERSIONING.md)) — OKF Interoperability & Knowledge Graph: lossless OKF export, first-class `knowledge[]` entity, OKF round-trip import, native `log.md` provenance, permissive consumer model. Validation Rules 72–86. Backward-compatible with V0.5.
 
