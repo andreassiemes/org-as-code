@@ -174,7 +174,7 @@ The specification defines 15+ sections for modeling organizational units, plus o
 
 **Governance models:** DACI · RAPID · OVIS · consent · consensus · autocratic
 
-→ Current stable: [`spec/opi-v0.7.md`](spec/opi-v0.7.md) (tagged `v0.7.1`) | JSON Schemas: [V0.7](spec/opi-v0.7.schema.json) · [V0.6](spec/opi-v0.6.schema.json) · [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json) | Stability policy: [VERSIONING.md](VERSIONING.md)
+→ Current stable: [`spec/opi-v0.7.md`](spec/opi-v0.7.md) (tagged `v0.7.3`) | JSON Schemas: [V0.7](spec/opi-v0.7.schema.json) · [V0.6](spec/opi-v0.6.schema.json) · [V0.4](spec/opi-v0.4.schema.json) · [V0.3](spec/opi-v0.3.schema.json) | Stability policy: [VERSIONING.md](VERSIONING.md)
 
 ## Templates
 
@@ -189,7 +189,7 @@ Templates use OPI's type inheritance (`components.types`) so you can define your
 
 **V0.8** (public draft on branch [`v0.8-draft`](https://github.com/andreassiemes/org-as-code/blob/v0.8-draft/spec/opi-v0.8.md) — [discussion open](https://github.com/andreassiemes/org-as-code/discussions/3)) — Effect and Legitimacy: `decisions[].enforcement` (did it take effect, as a separate dated fact) and `decisions[].approval` (quorum and consents), one composite `get_undelivered_decisions`, Rule 103 bounding catalog derivation, Rule 89 withdrawn. Rules 101–103, implemented on the branch. Backward-compatible with V0.7.
 
-**V0.7** (**stable**, tagged `v0.7.0` / `v0.7.1` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
+**V0.7** (**stable**, tagged `v0.7.3` — see [VERSIONING.md](VERSIONING.md)) — Decisions live, organizations servable: visibility tiers (core attribute), decision lifecycle (`decision_type`, hypotheses with `validate_by`, `reopen_log`, `dissent`, `conflicts_with`), `ai:` block (RAG governance), the **Serving Profile** — normative semantics for `context_endpoint: {format: mcp}`, with `orgspec serve` as the running reference implementation ([orgspec/README.md](orgspec/README.md)) — and **agent mandate provenance** (`mandate_source`, `valid_until`). Validation Rules 87–100. Backward-compatible with V0.6.
 
 **V0.6** (**stable**, tagged `v0.6.0` — see [VERSIONING.md](VERSIONING.md)) — OKF Interoperability & Knowledge Graph: lossless OKF export, first-class `knowledge[]` entity, OKF round-trip import, native `log.md` provenance, permissive consumer model. Validation Rules 72–86. Backward-compatible with V0.5.
 

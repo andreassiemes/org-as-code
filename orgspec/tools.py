@@ -60,6 +60,32 @@ TIER_ORDER = {"public": 0, "internal": 1, "restricted": 2, "confidential": 3}
 REDACTED_KEEP = ("id", "ref", "date", "visibility")
 
 
+class Envelope(dict):
+    """A composite tool's result wrapper — not an entity.
+
+    §1.2's default ("absent `visibility` means internal") classifies *entities*:
+    the records that live in the entity lists and carry a tier, declared or
+    implied. A composite's answer wrapper carries none, because it is not a
+    thing the organisation classified — it is the shape of a reply, built from
+    entities that were each classified on their own.
+
+    Without this distinction the default swallows the wrapper whole: served to a
+    `public` key, an unmarked `{"root": …, "nodes": […], "edges": […]}` is read
+    as an internal entity above the ceiling and redacted to the fields of
+    REDACTED_KEEP, none of which a wrapper has — so the composite returns `{}`
+    and an empty answer becomes indistinguishable from "nothing found".
+
+    Marking the wrapper keeps the single gate of `Catalog.call` intact: the
+    contents still pass through `enforce_tier` entity by entity, and a redacted
+    card inside a wrapper stays a redacted card. Only the wrapper itself is
+    spared a classification it never had.
+    """
+
+
+def _envelope(value: dict) -> Envelope:
+    return value if isinstance(value, Envelope) else Envelope(value)
+
+
 def tier_of(entity) -> int:
     """Classification of an entity; absent means internal (spec §1.2)."""
     if not isinstance(entity, dict):
@@ -67,7 +93,7 @@ def tier_of(entity) -> int:
     return TIER_ORDER.get(entity.get("visibility"), TIER_ORDER["internal"])
 
 
-def enforce_tier(value, ceiling: int):
+def enforce_tier(value, ceiling: int, _inherited: bool = False):
     """Apply the serving obligations of spec §1.1 to a tool result.
 
     At or below the ceiling the entity passes through untouched. Above it,
@@ -81,18 +107,44 @@ def enforce_tier(value, ceiling: int):
 
     Absence, not access-denied (§4.4): a caller cannot tell a filtered entity
     from one that does not exist.
+
+    `_inherited` marks the contents of an entity that has already cleared the
+    ceiling. Nested lists and objects such as `agents[].scope` *travel with
+    their record* — they are parts of it, not entities in their own right, and
+    they carry no tier of their own. Classifying them independently would apply
+    §1.2's entity default ("absent means internal") to a sub-object that was
+    never classified, and strip `scope` out of a record the caller is entitled
+    to read in full. The tier decision belongs to the record; once it is made,
+    it holds for everything inside it.
     """
     if isinstance(value, list):
-        out = [enforce_tier(v, ceiling) for v in value]
+        out = [enforce_tier(v, ceiling, _inherited) for v in value]
         return [v for v in out if v is not None]
+    if isinstance(value, Envelope):
+        # A wrapper is not an entity and has no tier of its own: recurse into its
+        # contents, never classify the wrapper. See Envelope's docstring.
+        #
+        # Inside a wrapper, a *list* holds entities (`nodes[]`, `bodies[]`,
+        # `precedents[]`) and each item is classified on its own. A plain
+        # *object* is a part of the answer, not an entity — `scope` — and is no
+        # more classifiable than the wrapper around it. No composite returns a
+        # bare entity as an object-valued key; where one would, it enforces the
+        # entity's tier itself before wrapping.
+        return Envelope({
+            k: enforce_tier(v, ceiling, _inherited=isinstance(v, dict))
+            for k, v in value.items()
+        })
     if not isinstance(value, dict):
+        return value
+    if _inherited:
+        # Part of a record that already cleared the ceiling.
         return value
     tier = tier_of(value)
     if tier >= TIER_ORDER["confidential"]:
         return None
     if tier > ceiling:
         return {k: value[k] for k in REDACTED_KEEP if k in value}
-    return {k: enforce_tier(v, ceiling) for k, v in value.items()}
+    return {k: enforce_tier(v, ceiling, _inherited=True) for k, v in value.items()}
 
 
 class Catalog:
@@ -232,7 +284,7 @@ class Catalog:
                 "No gremium purpose or decision precedent matches this topic. "
                 "Escalate via the org's change process (governance.change_process)."
             )
-        return answer
+        return _envelope(answer)
 
     def _decision_chain(self, id: str):
         m = self.model
@@ -268,20 +320,30 @@ class Catalog:
             _slim(m.by_id("decisions", n) or {"id": n, "error": "unresolved ref"})
             for n in sorted(seen)
         ]
-        return {"root": id, "nodes": nodes, "edges": edges}
+        return Envelope({"root": id, "nodes": nodes, "edges": edges})
 
     def _agent_mandate(self, ref: str):
         for a in self.model.entities.get("agents", []):
             if str(a.get("ref")) == str(ref):
-                return {
+                # The wrapper is built from the agent's fields, so it does not
+                # inherit the agent's tier the way a returned record would: the
+                # gate in `call` sees a wrapper, not the entity. Enforce the
+                # agent's own classification here, before wrapping — otherwise a
+                # restricted agent's mandate is served in full to any ceiling
+                # (the composite-versus-tier gap Rule 95 closed for the others).
+                if tier_of(a) > self.ceiling:
+                    return Envelope(
+                        {k: a[k] for k in REDACTED_KEEP if k in a}
+                    )
+                return Envelope({
                     "ref": a.get("ref"),
                     "scope": a.get("scope"),
                     "escalation_path": a.get("escalation_path"),
                     "disabled": a.get("disabled", False),
                     "context_endpoint": a.get("context_endpoint"),
-                }
-        return {"error": f"no agent with ref {ref}",
-                "known": [a.get("ref") for a in self.model.entities.get("agents", [])]}
+                })
+        return Envelope({"error": f"no agent with ref {ref}",
+                         "known": [a.get("ref") for a in self.model.entities.get("agents", [])]})
 
     # -- MCP surface -----------------------------------------------------------
     def describe(self) -> list[dict]:

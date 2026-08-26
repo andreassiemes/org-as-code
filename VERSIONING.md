@@ -15,9 +15,41 @@ the `opi:` field). This file states what a version label promises.
 | Version | Status | Scope |
 |---------|--------|-------|
 | **v0.8** | **draft** (branch `v0.8-draft`, public draft 2026-08-22) | Effect and Legitimacy: `decisions[].enforcement` (effect as a separate dated fact), `decisions[].approval` (quorum and consents), `get_undelivered_decisions` composite, bounded catalog derivation. Rules 101–103. Withdraws Rule 89 (field-level tiers; no syntax was ever specified). Stabilizes once a consumer maintains both blocks on real decisions. |
-| **v0.7** | **stable** (tagged `v0.7.2`, 2026-08-24) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile, agent mandate provenance. Rules 87–100. Published as a public draft 2026-07-09, stabilized after implementation feedback ([discussion](../../discussions/1)). `v0.7.1` closed the tier enforcement gap without changing any specification text. `v0.7.2` fixed the composite tools serving `restricted` entities in full below their tier (behaviour only, regression-tested). |
+| **v0.7** | **stable** (tagged `v0.7.2`, 2026-08-24) | Visibility tiers, decision lifecycle, `ai:` block, Serving Profile, agent mandate provenance. Rules 87–100. Published as a public draft 2026-07-09, stabilized after implementation feedback ([discussion](../../discussions/1)). `v0.7.1` closed the tier enforcement gap without changing any specification text. `v0.7.2` fixed the composite tools serving `restricted` entities in full below their tier (behaviour only, regression-tested). `v0.7.3` closed a disclosure in `get_agent_mandate`, which never checked the agent's own tier, and stopped composite result wrappers from being classified as entities (behaviour only, regression-tested — see the note below). |
 | **v0.6** | **stable** (tagged `v0.6.0`, 2026-07-09) | OKF interoperability, knowledge graph, `log.md` provenance, permissive consumer model. Rules 1–86. |
 | v0.5 and older | superseded | Kept in `spec/` for reference; documents remain valid (see below). |
+
+### v0.7.3 — disclosure in `get_agent_mandate` (2026-08-26)
+
+Anyone running `orgspec serve` from v0.7.0–v0.7.2 with an agent classified above the
+serving ceiling should update.
+
+`get_agent_mandate` assembled its answer from an agent's fields and returned it without
+ever consulting that agent's `visibility`. Every other tool was tier-enforced on the way
+out (Rule 95), but the enforcement gate saw a result *wrapper*, not the agent entity — so
+the wrapper's own (absent, therefore `internal`) classification was applied instead of the
+agent's. A `restricted` agent's mandate, including its `scope`, was served in full to any
+caller at ceiling `internal` or above.
+
+Two details are worth stating plainly, because they explain why this survived two patch
+releases:
+
+* **The default ceiling is the exposed one.** At ceiling `public` the answer looked
+  correct — but only because a second defect, fixed in the same patch, redacted the whole
+  wrapper to `{}`. One bug masked the other. The disclosure is visible at `internal`, which
+  is what `orgspec serve` runs at unless told otherwise.
+* **No test covered a ceiling other than the default**, and none covered an agent above the
+  ceiling. `tests/test_serving_public_ceiling.py` now does both, in both directions.
+
+The same patch stops composite result wrappers (`who_decides`, `get_decision_chain`,
+`get_agent_mandate`) from being read as entities, which had made them return `{}` at
+ceiling `public`, and stops a record's own sub-objects (such as `agents[].scope`) from
+being classified separately from the record they belong to.
+
+Found while describing this project in its own specification — the self-description is
+served at ceiling `public`, which is the case the suite had never exercised.
+
+No specification text changes. Documents valid under v0.7.2 remain valid.
 
 **Note on enforcement.** A stable label promises that the *specification* does not change
 anymore — not that every rule is implemented. Where the reference implementation lags the
