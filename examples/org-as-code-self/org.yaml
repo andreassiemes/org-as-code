@@ -1,0 +1,292 @@
+# org-as-code-self — the project encoded in its own specification.
+#
+# Every record below is checkable against this repository: tags, commit hashes,
+# VERSIONING.md and the spec text. Nothing here is illustrative. Where the record
+# is unflattering it stays in — a governance document that only reports its
+# successes is a brochure.
+#
+#   orgspec validate examples/org-as-code-self
+#   orgspec serve    examples/org-as-code-self --ceiling public
+#
+opi: "0.8.0"
+
+org:
+  id: org-as-code
+  name: "Org as Code"
+  purpose: "An open specification (OPI) and reference implementation for encoding how an organization decides, in a form a machine can read"
+
+unit:
+  id: org-as-code-project
+  visibility: public
+  name: "Org as Code project"
+  type: leadership
+  purpose: "Root unit: the specification, its reference implementation, and the site that publishes both"
+
+units:
+  - id: maintainer
+    visibility: public
+    name: "Maintainer"
+    type: leadership
+    parent: org-as-code-project
+    purpose: "Holds spec authority. One person. This project has no second decider, and says so here rather than implying one"
+    mandate: "Decides the specification, its version labels, and what ships. Cannot ratify anything alone that requires a consumer — see dec-009"
+    members:
+      - role: maintainer
+        count: 1
+
+  - id: spec
+    visibility: public
+    name: "Specification"
+    type: platform
+    parent: org-as-code-project
+    purpose: "The normative OPI text and its validation rules. v0.7 stable, v0.8 public draft"
+
+  - id: reference-implementation
+    visibility: public
+    name: "Reference implementation (orgspec)"
+    type: platform
+    parent: org-as-code-project
+    purpose: "Validator and read-only MCP serving endpoint. A rule that the implementation cannot run does not get to call itself enforced"
+
+  - id: site
+    visibility: public
+    name: "org-as-code.com"
+    type: support
+    parent: org-as-code-project
+    purpose: "Publishes the spec facts to human and machine readers. Bound by dec-010 to ship in the same step as a release"
+
+gremien:
+  - id: maintainer-decision
+    visibility: public
+    name: "Maintainer decision"
+    purpose: "The only deciding body this project has. Recorded as a gremium of one so that every decision below resolves to a real decider instead of the passive voice"
+    cadence: on-demand
+    members: [maintainer]
+
+  - id: public-draft-review
+    visibility: public
+    name: "Public draft review"
+    purpose: "Open feedback on a draft branch before it stabilizes. Has produced review comments; has not yet produced a consumer maintaining the v0.8 blocks on real decisions"
+    cadence: on-demand
+    members: [maintainer]
+
+decisions:
+  - id: dec-001
+    visibility: public
+    date: 2026-07-09
+    title: "OPI v0.6 is declared stable"
+    status: active
+    decision_type: one-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "OKF interoperability, knowledge graph and the permissive consumer model had run against real documents; freezing them let v0.7 build on a fixed floor"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-07-09
+      ref: "tag:v0.6.0"
+    approval:
+      quorum: 1
+      records:
+        - by: maintainer
+          at: 2026-07-09
+          ref: "commit:b573f80"
+
+  - id: dec-002
+    visibility: public
+    date: 2026-07-09
+    title: "A minor version is published as a public draft before it is declared stable"
+    status: active
+    decision_type: one-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "A specification written without an implementation running against it states intentions, not rules. The draft phase is where the difference surfaces"
+    conditions: "The reference implementation MUST run against the draft before the version label flips to stable"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-07-09
+      ref: "commit:b573f80"
+
+  - id: dec-003
+    visibility: public
+    date: 2026-07-09
+    title: "Rule 89: a field-level visibility tier must be at least as strict as its entity's tier"
+    status: superseded
+    decision_type: one-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "Published as normative in v0.7 on the assumption that field-level classification would be needed"
+    # The honest record: this rule was published, it was normative, and it never
+    # took effect. No syntax for declaring a field-level tier was ever specified,
+    # no schema construct, no example, and no line of the validator or the server
+    # ever touched one. Decided is not the same fact as carried, which is the
+    # whole reason `enforcement` exists as a separate block (v0.8 §1).
+    enforcement:
+      status: pending
+    reopen_log:
+      - "2026-08-01 — marked unimplementable as written in v0.7.1; no consumer had requested the feature in three weeks of public draft"
+
+  - id: dec-004
+    visibility: public
+    date: 2026-08-01
+    title: "OPI v0.7 is declared stable"
+    status: active
+    decision_type: one-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "Visibility tiers, decision lifecycle, the ai block and the Serving Profile had implementation feedback from the public draft"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-08-01
+      ref: "tag:v0.7.0"
+
+  - id: dec-005
+    visibility: public
+    date: 2026-08-01
+    title: "v0.7.1 closes the tier enforcement gap without changing any specification text"
+    status: active
+    decision_type: two-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "A stable label promises that the specification does not change, not that every rule is implemented. Closing that distance is PATCH work, never a new minor version"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-08-01
+      ref: "tag:v0.7.1"
+
+  - id: dec-006
+    visibility: public
+    date: 2026-08-01
+    title: "Withdraw Rule 89 rather than specify a syntax for field-level tiers"
+    status: active
+    decision_type: one-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    revises: dec-003
+    rationale: "Three weeks of public draft produced no consumer and no request for field tiers. Entity-level classification covers what every consumer actually does. Inventing a syntax with no consumer is the pattern on which an earlier proposal failed review"
+    conditions: "The rule number is not reused. If a real case arrives, a later version introduces the syntax under a new number, designed against the case instead of ahead of it"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-08-22
+      ref: "branch:v0.8-draft"
+
+  - id: dec-007
+    visibility: public
+    date: 2026-08-24
+    title: "Composite tools must redact above the caller's ceiling (Rule 95)"
+    status: active
+    decision_type: two-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "A review found the serving layer returning restricted entities in full through composite tools, below the tier that should have hidden them. Our rule, our implementation, our miss. Fixed and regression-tested"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-08-24
+      ref: "tag:v0.7.2"
+
+  - id: dec-008
+    visibility: public
+    date: 2026-08-22
+    title: "Publish OPI v0.8 as a public draft: Effect and Legitimacy"
+    status: active
+    decision_type: one-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "A decision record kept claiming more than it knew. Splitting whether a decision was entitled to bind from whether it ever took effect turns 'what did we decide and never carry?' into a number instead of a silence"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-08-22
+      ref: "branch:v0.8-draft"
+
+  - id: dec-009
+    visibility: public
+    date: 2026-08-22
+    title: "v0.8 stabilizes only once a consumer maintains enforcement and approval on real decisions over time"
+    status: active
+    decision_type: one-way
+    gremium: public-draft-review
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "Every rule of v0.8 runs, but none has been kept current by an organization on its own decisions. A draft that stabilizes without a consumer repeats the mistake Rule 89 already made once"
+    validate: "One organization keeps enforcement and approval current on its own decisions, and the relapse and latency figures are computed at least once outside the demo"
+    # Decided, not carried. This is the open gate of the project and the reason
+    # the design-partner issue exists. It is listed here rather than in a section
+    # nobody reads, and `get_undelivered_decisions` will keep asking about it.
+    # The date is a commitment, not an estimate: from 2026-10-01 this record
+    # reports itself as overdue to every reader, including the ones outside.
+    enforcement:
+      status: pending
+      expected_by: 2026-09-30
+
+  - id: dec-010
+    visibility: public
+    date: 2026-07-09
+    title: "Website facts ship in the same release step as the tag, never later"
+    status: active
+    decision_type: two-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "A site that states an older version than the specification contradicts the specification to every reader who checks, machine readers first"
+    # A relapse, recorded as one: the rule was set, then broken. The site stood on
+    # v0.6 and 86 rules while v0.7 had been stable for three weeks. Corrected only
+    # when a letter was about to point readers at it.
+    reopen_log:
+      - "2026-08-25 — the site had stated v0.6 and 86 validation rules since the v0.7.0 tag on 2026-08-01; corrected with the V1.9.3 release"
+    enforcement:
+      status: in_effect
+      first_effect_at: 2026-08-25
+      ref: "commit:12d05a1"
+
+  # Served below `restricted` this appears as a redacted card — id, date and tier
+  # only. Its existence stays visible on purpose: a slice that silently drops what
+  # it will not show teaches its reader that the record is complete when it is not.
+  - id: dec-011
+    date: 2026-03-01
+    title: "Client engagements applying OPI outside this repository"
+    visibility: restricted
+    classification_reason: "client confidentiality — engagement details are not the project's to publish"
+    status: active
+    decision_type: one-way
+    gremium: maintainer-decision
+    driver: maintainer
+    approver: maintainer
+    scope: program
+    rationale: "The specification is applied in client engagements. What is learned there returns as specification changes; the engagements themselves are not the project's to publish, which is what the tier on this record enforces"
+
+agents:
+  - ref: correspondence-agent
+    visibility: public
+    # The agent that drafted the letter this slice accompanies. It has no name,
+    # and its authority is not its own: remove the gremium below and Rule 100
+    # fails on the next validation run. There is no separate revocation step.
+    mandate_source: maintainer-decision
+    valid_until: 2026-12-31
+    scope:
+      units: [spec, site]
+      data: [public-spec, public-history]
+      governance: read-only
+      note: "Drafts outbound correspondence from the public record. Never sends. Every outbound text is read by the maintainer before it leaves, and the read is recorded"
+    schedule:
+      cadence: on-demand
+    escalation_path: [maintainer]
+    context_endpoint:
+      format: mcp
+      include_decisions: true
